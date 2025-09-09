@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { apiClient } from '../lib/api';
-import { DEV_SEED, generateSeedData } from '../lib/seed';
 import StorageUtils from '../lib/StorageUtils';
 import { PredictionHistory, calculatePredictionHistory } from '../lib/cycle';
 
@@ -72,7 +71,6 @@ interface CycleStore {
   syncUserData: () => Promise<void>;
   syncToServer: () => Promise<void>;
   clearData: () => Promise<void>;
-  loadSeedData: () => void;
   generateHistoricalCycles: (periodLogs: string[]) => any[];
   updatePredictionHistory: () => void; // 新增：更新预测历史
   getCurrentUserId: () => Promise<string | null>;
@@ -498,32 +496,34 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
     }
   },
 
-  loadSeedData: function() {
-    var seedData = generateSeedData();
-    set(Object.assign({}, seedData, { error: null }));
-    get().syncToServer();
-  },
 
   generateHistoricalCycles: function(periodLogs: string[]) {
     var preferences = get().preferences;
-    var allPeriodDates = periodLogs.slice();
     
-    // 添加LMP数据到经期日期列表中
-    if (preferences.lastMenstrualPeriod) {
-      var lmpStart = new Date(preferences.lastMenstrualPeriod);
-      // 添加LMP开始日期及后续几天（根据平均经期长度）
-      for (var i = 0; i < preferences.avgPeriod; i++) {
-        var lmpDate = new Date(lmpStart);
-        lmpDate.setDate(lmpStart.getDate() + i);
-        var dateString = lmpDate.toISOString().split('T')[0];
-        if (allPeriodDates.indexOf(dateString) === -1) {
+    // 优先使用用户手动记录的 periodLogs，不混合 LMP 数据
+    var allPeriodDates: string[] = [];
+    
+    if (periodLogs.length === 0) {
+      // 如果没有手动记录，尝试使用 LMP 数据
+      if (preferences.lastMenstrualPeriod && preferences.avgPeriod) {
+        var lmpStart = new Date(preferences.lastMenstrualPeriod);
+        // 添加LMP开始日期及后续几天（根据平均经期长度）
+        for (var i = 0; i < preferences.avgPeriod; i++) {
+          var lmpDate = new Date(lmpStart);
+          lmpDate.setDate(lmpStart.getDate() + i);
+          var dateString = lmpDate.toISOString().split('T')[0];
           allPeriodDates.push(dateString);
         }
+        
+        if (allPeriodDates.length === 0) {
+          return [];
+        }
+      } else {
+        return [];
       }
-    }
-    
-    if (allPeriodDates.length === 0) {
-      return [];
+    } else {
+      // 直接使用 periodLogs，不添加 LMP 数据
+      allPeriodDates = periodLogs.slice();
     }
     
     // 将连续的日期分组，每组代表一个经期
@@ -556,7 +556,50 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
     var periodGroups = groupConsecutiveDates(allPeriodDates);
     var cycles = [];
     
-    // 生成历史周期数据
+    // 判断状态的辅助函数
+    var calculateStatus = function(cycleLen: number, periodLen: number) {
+      // 周期长度判断 (21-35天正常)
+      if (cycleLen < 21 || cycleLen > 35) {
+        return 'red';
+      }
+      if (cycleLen < 25 || cycleLen > 32) {
+        return 'yellow';
+      }
+      
+      // 经期长度判断 (3-7天正常)
+      if (periodLen < 3 || periodLen > 7) {
+        return 'red';
+      }
+      if (periodLen < 4 || periodLen > 6) {
+        return 'yellow';
+      }
+      
+      return 'green';
+    };
+    
+    // 首先添加最新的经期作为当前经期（如果存在）
+    if (periodGroups.length > 0) {
+      var latestPeriod = periodGroups[0];
+      var latestPeriodLength = latestPeriod.length;
+      
+      // 如果有多个经期组，可以计算当前周期长度
+      var currentCycleLength = 0;
+      if (periodGroups.length > 1) {
+        var latestStart = new Date(latestPeriod[0]);
+        var previousStart = new Date(periodGroups[1][0]);
+        currentCycleLength = Math.round((latestStart.getTime() - previousStart.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      
+      cycles.push({
+        startDate: latestPeriod[0],
+        endDate: latestPeriod[latestPeriod.length - 1],
+        cycleLength: currentCycleLength,
+        periodLength: latestPeriodLength,
+        status: calculateStatus(currentCycleLength, latestPeriodLength)
+      });
+    }
+    
+    // 然后添加历史周期数据
     for (var i = 1; i < periodGroups.length; i++) {
       var currentPeriod = periodGroups[i - 1]; // 较新的经期
       var previousPeriod = periodGroups[i]; // 较旧的经期
@@ -569,27 +612,6 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
       
       // 计算经期长度
       var periodLength = previousPeriod.length;
-      
-      // 判断状态
-      var calculateStatus = function(cycleLen: number, periodLen: number) {
-        // 周期长度判断 (21-35天正常)
-        if (cycleLen < 21 || cycleLen > 35) {
-          return 'red';
-        }
-        if (cycleLen < 25 || cycleLen > 32) {
-          return 'yellow';
-        }
-        
-        // 经期长度判断 (3-7天正常)
-        if (periodLen < 3 || periodLen > 7) {
-          return 'red';
-        }
-        if (periodLen < 4 || periodLen > 6) {
-          return 'yellow';
-        }
-        
-        return 'green';
-      };
       
       cycles.push({
         startDate: previousPeriod[0],

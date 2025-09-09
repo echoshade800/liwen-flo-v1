@@ -19,14 +19,26 @@ export default function CyclesHubScreen() {
   const periodLogs = useCycleStore(state => state.periodLogs);
   const generateHistoricalCycles = useCycleStore(state => state.generateHistoricalCycles);
   const clearData = useCycleStore(state => state.clearData);
-  const loadSeedData = useCycleStore(state => state.loadSeedData);
 
   const cycleInfo = calculateCurrentCycle(periods, preferences);
   
   // 优先使用用户记录的月经数据生成历史周期
   const historicalCycles = useMemo(() => {
+    console.log('=== Debug Cycle History ===');
+    console.log('periodLogs:', periodLogs);
+    
     if (periodLogs.length > 0) {
-      return generateHistoricalCycles(periodLogs);
+      const cycles = generateHistoricalCycles(periodLogs);
+      console.log('Generated historicalCycles:', cycles);
+      cycles.forEach((cycle, index) => {
+        console.log(`Cycle ${index}:`, {
+          startDate: cycle.startDate,
+          endDate: cycle.endDate,
+          periodLength: cycle.periodLength,
+          cycleLength: cycle.cycleLength
+        });
+      });
+      return cycles;
     }
     return getHistoricalCycles(periods);
   }, [periodLogs, periods, generateHistoricalCycles]);
@@ -35,30 +47,13 @@ export default function CyclesHubScreen() {
     clearData();
   };
 
-  const handleLoadSample = () => {
-    loadSeedData();
-  };
 
   const getStats = () => {
     const { preferences } = useCycleStore.getState();
-    const allPeriodDates = [...periodLogs];
     
-    // 添加LMP数据到经期日期列表中
-    if (preferences.lastMenstrualPeriod) {
-      const lmpStart = dayjs(preferences.lastMenstrualPeriod);
-      // 添加LMP开始日期及后续几天（根据平均经期长度）
-      for (let i = 0; i < preferences.avgPeriod; i++) {
-        const lmpDate = lmpStart.add(i, 'day');
-        const dateString = lmpDate.format('YYYY-MM-DD');
-        if (!allPeriodDates.includes(dateString)) {
-          allPeriodDates.push(dateString);
-        }
-      }
-    }
-    
-    // 如果用户有手动记录的经期日期，基于这些计算
-    if (allPeriodDates.length > 0) {
-      const sortedLogs = [...allPeriodDates].sort();
+    // 优先使用用户手动记录的 periodLogs 进行计算
+    if (periodLogs.length > 0) {
+      const sortedLogs = [...periodLogs].sort();
       const periodGroups = groupConsecutiveDates(sortedLogs);
       
       if (periodGroups.length >= 2) {
@@ -102,6 +97,19 @@ export default function CyclesHubScreen() {
           periodLengthStatus,
         };
       }
+    }
+    
+    // 如果没有手动记录的经期数据，尝试使用 LMP 数据
+    if (preferences.lastMenstrualPeriod && preferences.avgPeriod) {
+      const periodLengthStatus = preferences.avgPeriod >= 3 && preferences.avgPeriod <= 7 ? 'green' : 'red';
+      
+      return {
+        lastCycleLength: preferences.avgCycle || 28,
+        lastPeriodLength: preferences.avgPeriod,
+        cycleVariation: 'green' as const,
+        cycleLengthStatus: 'green' as const,
+        periodLengthStatus,
+      };
     }
     
     // 如果没有足够的手动记录，回退到历史周期数据
@@ -159,9 +167,6 @@ export default function CyclesHubScreen() {
     <SafeAreaView style={[styles.container, Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Cycle Hub</Text>
-        <TouchableOpacity onPress={handleLoadSample}>
-          <Ionicons name="refresh" size={24} color={colors.primary} />
-        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -212,9 +217,6 @@ export default function CyclesHubScreen() {
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>Not enough data yet</Text>
               <Text style={styles.emptySubtext}>Log a few cycles to see your history here</Text>
-              <TouchableOpacity style={styles.sampleButton} onPress={handleLoadSample}>
-                <Text style={styles.sampleButtonText}>Load Sample Data</Text>
-              </TouchableOpacity>
             </View>
           ) : (
             historicalCycles.map((cycle, index) => (
@@ -226,7 +228,7 @@ export default function CyclesHubScreen() {
                       {cycle.endDate ? dayjs(cycle.endDate).format('MMM D') : 'Ongoing'}
                     </Text>
                     <Text style={styles.cycleMeta}>
-                      {cycle.cycleLength} day cycle · {cycle.periodLength} day period
+                      {cycle.cycleLength || '--'} day cycle · {cycle.periodLength} day period
                     </Text>
                   </View>
                   <StatusBadge 
@@ -338,17 +340,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing(2),
-  },
-  sampleButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.medium,
-    paddingHorizontal: spacing(3),
-    paddingVertical: spacing(1),
-  },
-  sampleButtonText: {
-    ...typography.caption,
-    color: colors.white,
-    fontWeight: '600',
   },
   cycleCard: {
     backgroundColor: colors.white,
