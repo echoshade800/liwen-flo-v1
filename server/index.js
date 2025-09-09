@@ -16,7 +16,7 @@ initDatabase().catch(console.error);
 
 // Middleware
 app.use(cors({
-  origin: [`http://100.28.58.186:${process.env.FRONTEND_PORT || 5178}`, 'http://100.28.58.186:3007'],
+  origin: [`http://100.28.58.186:${process.env.FRONTEND_PORT || 8081}`, 'http://100.28.58.186:3007'],
   credentials: true
 }));
 app.use(express.json());
