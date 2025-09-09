@@ -189,14 +189,30 @@ class ApiClient {
   }
 
   async updatePeriodLogs(dates: string[]) {
+    console.log('=== API updatePeriodLogs Debug ===');
+    console.log('发送到服务器的 dates:', dates);
+    
     // 获取用户ID
     const userId = await this.getUserId();
+    console.log('用户ID:', userId);
+    
     // 直接通过URL参数传递uid，而不是依赖服务器认证
     const url = '/cycle/period-logs' + (userId ? '?uid=' + userId : '');
-    return this.request(url, {
-      method: 'POST',
-      body: JSON.stringify({ dates: dates })
-    });
+    console.log('请求URL:', url);
+    console.log('请求体:', { dates: dates });
+    
+    try {
+      const result = await this.request(url, {
+        method: 'POST',
+        body: JSON.stringify({ dates: dates })
+      });
+      
+      console.log('服务器响应:', result);
+      return result;
+    } catch (error) {
+      console.error('updatePeriodLogs 请求失败:', error);
+      throw error;
+    }
   }
 
   async updateDailyLog(log: any) {

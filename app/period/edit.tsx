@@ -11,8 +11,6 @@ import { colors, radii, spacing, typography } from '../theme/tokens';
 export default function PeriodEditScreen() {
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [currentMonth, setCurrentMonth] = useState(dayjs().format('YYYY-MM-DD'));
-  // 记录本次编辑会话中被用户显式取消选择的日期，避免被LMP标记重新高亮
-  const [suppressedDates, setSuppressedDates] = useState<string[]>([]);
   
   const periodLogs = useCycleStore(state => state.periodLogs);
   const setPeriodLogs = useCycleStore(state => state.setPeriodLogs);
@@ -32,8 +30,6 @@ export default function PeriodEditScreen() {
       console.log('Filtered future dates from incoming period logs');
     }
     setSelectedDates([...uniqueSorted]);
-    // 切换记录源时，清空抑制列表
-    setSuppressedDates([]);
     // 跳转到最近一次选择日期所在的月份，确保进入页面即可看到标记
     if (uniqueSorted.length > 0) {
       const last = uniqueSorted[uniqueSorted.length - 1];
@@ -53,31 +49,69 @@ export default function PeriodEditScreen() {
       if (prev.includes(dateString)) {
         // 取消选择
         const next = prev.filter(date => date !== dateString);
-        // 记录到抑制列表，避免被LMP标记重新着色
-        setSuppressedDates(list => Array.from(new Set(list.concat(dateString))));
         console.log('handleDayPress next', next);
         return next;
       } else {
         // 添加选择
         const next = [...prev, dateString].sort();
-        // 若重新选择该日期，从抑制列表移除
-        setSuppressedDates(list => list.filter(d => d !== dateString));
         console.log('handleDayPress next', next);
         return next;
       }
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      console.log('handleSave selectedDates', selectedDates);
+      console.log('=== Period Edit Save Debug ===');
+      console.log('原始 selectedDates:', selectedDates);
+      console.log('原始 periodLogs (从store):', periodLogs);
+      
       // 保存前再次过滤掉未来日期，保证数据安全
       const filtered = selectedDates.filter(d => !dayjs(d).isAfter(dayjs(), 'day'));
+      console.log('过滤后的 filtered dates:', filtered);
+      
       // 同步更新 LMP（最近一次经期开始），不生成额外日期
       const lmp = findLastPeriodStart(filtered);
-      setPreferences({ lastMenstrualPeriod: lmp || undefined });
-      setPeriodLogs(filtered);
-      router.back();
+      console.log('计算出的 LMP:', lmp);
+      
+      // 先更新 preferences（不触发同步）
+      const setPreferencesWithoutSync = useCycleStore.getState().setPreferences;
+      
+      // 批量更新：先更新 preferences，再更新 periodLogs（只触发一次同步）
+      useCycleStore.setState((state) => ({
+        preferences: { ...state.preferences, lastMenstrualPeriod: lmp || undefined },
+        periodLogs: filtered,
+        error: null
+      }));
+      
+      // 手动触发一次同步，包含所有更新
+      console.log('调用 syncToServer，发送合并后的数据');
+      useCycleStore.getState().syncToServer();
+      
+      // 等待同步完成 - 检查 store 中的数据是否已更新
+      let attempts = 0;
+      const maxAttempts = 20; // 最多等待 10 秒
+      const checkInterval = 500; // 每 500ms 检查一次
+      
+      const waitForSync = () => {
+        attempts++;
+        const currentPeriodLogs = useCycleStore.getState().periodLogs;
+        console.log(`同步检查 ${attempts}/${maxAttempts}:`, currentPeriodLogs);
+        
+        // 检查数据是否已经同步（比较数组内容）
+        const isDataSynced = JSON.stringify(currentPeriodLogs.sort()) === JSON.stringify(filtered.sort());
+        
+        if (isDataSynced || attempts >= maxAttempts) {
+          console.log(isDataSynced ? '数据同步完成' : '同步超时，强制返回');
+          console.log('最终 periodLogs:', currentPeriodLogs);
+          router.back();
+        } else {
+          setTimeout(waitForSync, checkInterval);
+        }
+      };
+      
+      // 开始等待同步
+      setTimeout(waitForSync, checkInterval);
     } catch (error) {
       console.error('Failed to save period logs:', error);
       // Could show an alert here if needed
@@ -92,42 +126,6 @@ export default function PeriodEditScreen() {
     const marked: Record<string, any> = {};
     const todayObj = dayjs();
     const todayStr = todayObj.format('YYYY-MM-DD');
-    const suppressedSet = new Set(suppressedDates);
-    
-    // 标记LMP经期（淡色，仅作参考，不等同于选中）
-    if (preferences.lastMenstrualPeriod) {
-      const lmpStart = dayjs(preferences.lastMenstrualPeriod);
-      const lmpEnd = lmpStart.add(preferences.avgPeriod - 1, 'day');
-      
-      let current = lmpStart;
-      while (current.isSameOrBefore(lmpEnd)) {
-        const dateKey = current.format('YYYY-MM-DD');
-        // 移除未来日期标记
-        if (current.isAfter(todayObj, 'day')) {
-          current = current.add(1, 'day');
-          continue;
-        }
-        // 若该日期被用户显式取消选择，跳过LMP着色
-        if (suppressedSet.has(dateKey)) {
-          current = current.add(1, 'day');
-          continue;
-        }
-        marked[dateKey] = {
-          customStyles: {
-            container: {
-              // 使用更轻的背景以与用户选中的实心色区分（约10% 透明度）
-              backgroundColor: colors.period + '1A',
-              borderRadius: 16,
-            },
-            text: {
-              color: colors.text,
-              fontWeight: '400',
-            }
-          }
-        };
-        current = current.add(1, 'day');
-      }
-    }
     
     // 标记用户选择的日期（仅当在 selectedDates 中时显示为“选中”样式）
     selectedDates.forEach(dateString => {

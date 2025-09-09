@@ -113,12 +113,19 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
   },
 
   setPeriodLogs: function(dates: string[]) {
+    console.log('=== setPeriodLogs Debug ===');
+    console.log('接收到的新 dates:', dates);
+    console.log('当前 store 中的 periodLogs:', get().periodLogs);
+    
     set(function(state) {
       return {
         periodLogs: dates,
         error: null
       };
     });
+    
+    console.log('更新后 store 中的 periodLogs:', get().periodLogs);
+    console.log('触发 syncToServer...');
     get().syncToServer();
   },
   
@@ -357,8 +364,10 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
         await get().syncUserData();
         
         // Update period logs
+        console.log('=== Syncing Period Logs to Server ===');
+        console.log('发送到服务器的 periodLogs:', state.periodLogs);
         await apiClient.updatePeriodLogs(state.periodLogs);
-        console.log('Period logs synced:', state.periodLogs.length, 'dates');
+        console.log('Period logs synced successfully:', state.periodLogs.length, 'dates');
         
         // 同步每日日志数据到服务器
         if (state.dailyLogs && state.dailyLogs.length > 0) {
@@ -391,14 +400,28 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
         
         // 同步成功后，重新从服务器加载数据以确保数据一致性
         try {
-          console.log('Reloading data from server after successful sync...');
+          console.log('=== Reloading Data After Sync ===');
+          console.log('同步前的本地 periodLogs:', state.periodLogs);
+          
           await get().loadFromServer();
           
           // 验证重新加载的数据是否包含我们同步的数据
           const reloadedState = get();
-          console.log(`Data reloaded from server after sync:`);
-          console.log(`- Period logs: ${reloadedState.periodLogs.length}`);
-          console.log(`- Daily logs: ${reloadedState.dailyLogs.length}`);
+          console.log('=== Server Data After Reload ===');
+          console.log('从服务器加载的 periodLogs:', reloadedState.periodLogs);
+          console.log(`Period logs count: ${reloadedState.periodLogs.length}`);
+          console.log(`Daily logs count: ${reloadedState.dailyLogs.length}`);
+          
+          // 检查数据一致性
+          const originalSorted = [...state.periodLogs].sort();
+          const reloadedSorted = [...reloadedState.periodLogs].sort();
+          const isConsistent = JSON.stringify(originalSorted) === JSON.stringify(reloadedSorted);
+          console.log('数据一致性检查:', isConsistent ? '✅ 一致' : '❌ 不一致');
+          
+          if (!isConsistent) {
+            console.log('期望的数据:', originalSorted);
+            console.log('实际的数据:', reloadedSorted);
+          }
           
           // 如果重新加载后仍然没有数据，尝试再次加载
           if (reloadedState.periodLogs.length === 0 && reloadedState.dailyLogs.length === 0) {
