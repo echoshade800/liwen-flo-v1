@@ -28,7 +28,8 @@ router.post('/register', async (req, res) => {
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
-    const userId = uuidv4();
+    // 确保 userId 是字符串类型
+    const userId = String(uuidv4());
 
     // Create user
     await executeQuery(
@@ -101,7 +102,10 @@ router.post('/create-user-if-not-exists', async (req, res) => {
   try {
     console.log('create-user-if-not-exists', req.body);
     // 解构请求体，并为所有可能为undefined的字段提供默认值
-    const { uid, email = '', name = 'New User' } = req.body;
+    const { uid: rawUid, email = '', name = 'New User' } = req.body;
+    
+    // 确保 uid 始终是字符串类型，避免大数字被转换为科学计数法
+    const uid = String(rawUid || '').trim();
 
     // 验证必要的参数
     if (!uid) {
@@ -111,11 +115,13 @@ router.post('/create-user-if-not-exists', async (req, res) => {
     // 使用INSERT ... ON DUPLICATE KEY UPDATE来处理并发情况
     // 这样即使多个请求同时尝试创建同一个用户，也不会抛出重复键错误
     const passwordHash = '';
+    const safeEmail = String(email || '').trim();
+    const safeName = String(name || 'New User').trim();
     
     // 先尝试插入用户，如果用户已存在则更新信息
     await executeQuery(
       'INSERT INTO users (uid, email, password_hash, name) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE email = VALUES(email), name = VALUES(name)',
-      [uid, email || '', passwordHash, name || 'New User']
+      [uid, safeEmail, passwordHash, safeName]
     );
     
     // 检查用户偏好设置是否存在

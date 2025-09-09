@@ -9,7 +9,7 @@ router.get('/profile', async (req, res) => {
   try {
     // 1) 获取并规范化 uid（字符串）
     const raw = Array.isArray(req.query.uid) ? req.query.uid[0] : req.query.uid;
-    const userId = (raw ?? '')
+    const userId = String(raw ?? '')
       .toString()
       .replace(/\u200B/g, '')  // 去零宽空格
       .replace(/\u00A0/g, ' ') // 不间断空格 -> 普通空格
@@ -88,7 +88,7 @@ router.get('/profile', async (req, res) => {
 router.put('/profile', async (req, res) => {
   try {
     // 直接从URL查询参数中获取用户ID，不再依赖认证中间件
-    const userId = req.query.uid;
+    const userId = String(req.query.uid || '').trim();
     
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
@@ -119,7 +119,7 @@ router.put('/profile', async (req, res) => {
 router.put('/preferences', async (req, res) => {
   try {
     // 直接从URL查询参数中获取用户ID，不再依赖认证中间件
-    const userId = req.query.uid;
+    const userId = String(req.query.uid || '').trim();
     
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
