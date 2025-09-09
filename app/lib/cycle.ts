@@ -133,6 +133,43 @@ export function getCalendarData(
 
   const calendarData: Record<string, any> = {};
 
+  // 为当前查看的月份生成完整的周期预测数据
+  const generateCyclePredictionsForMonth = (referenceDate: dayjs.Dayjs, cycleLength: number, periodLength: number) => {
+    const predictions: Array<{
+      periodStart: dayjs.Dayjs;
+      periodEnd: dayjs.Dayjs;
+      ovulationDate: dayjs.Dayjs;
+      fertileStart: dayjs.Dayjs;
+      fertileEnd: dayjs.Dayjs;
+    }> = [];
+
+    // 计算排卵日（周期长度-14天，最小为第14天）
+    const ovulationDay = Math.max(14, cycleLength - 14);
+
+    // 从参考日期开始，向前和向后各计算6个周期，确保覆盖当前月份
+    for (let cycleOffset = -6; cycleOffset <= 6; cycleOffset++) {
+      const periodStart = referenceDate.add(cycleOffset * cycleLength, 'day');
+      const periodEnd = periodStart.add(periodLength - 1, 'day');
+      const ovulationDate = periodStart.add(ovulationDay - 1, 'day');
+      const fertileStart = ovulationDate.subtract(5, 'day');
+      const fertileEnd = ovulationDate.add(1, 'day');
+
+      // 检查这个周期是否与当前月份有重叠
+      if (periodStart.isBefore(monthEnd.add(1, 'day')) && periodEnd.isAfter(monthStart.subtract(1, 'day')) ||
+          fertileStart.isBefore(monthEnd.add(1, 'day')) && fertileEnd.isAfter(monthStart.subtract(1, 'day'))) {
+        predictions.push({
+          periodStart,
+          periodEnd,
+          ovulationDate,
+          fertileStart,
+          fertileEnd
+        });
+      }
+    }
+
+    return predictions;
+  };
+
   // 优先标记用户手动选择的经期日期
   periodLogs.forEach(dateString => {
     try {
@@ -167,101 +204,80 @@ export function getCalendarData(
     }
   });
 
-  // 标记用户输入的LMP（最后月经期）- 只有在没有用户手动选择时才显示
-  // 标记用户输入的LMP（最后月经期）并预测下次月经
+  // 生成基于LMP或最后一次经期的完整周期预测
+  let referenceDate: dayjs.Dayjs | null = null;
+  
   if (preferences.lastMenstrualPeriod) {
-    const lmpStart = dayjs(preferences.lastMenstrualPeriod);
-    const lmpEnd = lmpStart.add(preferences.avgPeriod - 1, 'day');
-    
-    // 预测下次月经开始时间 = LMP + 平均周期长度
-    const nextPeriodStart = lmpStart.add(preferences.avgCycle, 'day');
-    const nextPeriodEnd = nextPeriodStart.add(preferences.avgPeriod - 1, 'day');
-    
-    // 基于LMP计算排卵日和受孕窗口
-    const ovulationDay = Math.max(14, preferences.avgCycle - 14);
-    const lmpOvulationDate = lmpStart.add(ovulationDay - 1, 'day');
-    const lmpFertileStart = lmpOvulationDate.subtract(5, 'day');
-    const lmpFertileEnd = lmpOvulationDate.add(1, 'day');
-    
-    // 标记LMP经期（深粉色实心圆圈）
-    let current = lmpStart;
-    // while (current.isSameOrBefore(lmpEnd)) {
-    //   if (current.isBetween(monthStart, monthEnd, 'day', '[]')) {
-    //     const dateKey = current.format('YYYY-MM-DD');
-    //     // 只有在用户没有手动标记时才显示LMP
-    //     if (!calendarData[dateKey]) {
-    //       calendarData[dateKey] = {
-    //         selectedColor: colors.period,
-    //         type: 'lmp_period',
-    //         customStyles: {
-    //           container: {
-    //             backgroundColor: colors.period,
-    //             borderRadius: 16,
-    //           },
-    //           text: {
-    //             color: colors.white,
-    //             fontWeight: '600',
-    //           }
-    //         }
-    //       };
-    //     }
-    //   }
-    //   current = current.add(1, 'day');
-    // }
-    
-    // 标记预测的下次月经（浅粉色实心圆圈）
-    current = nextPeriodStart;
-    while (current.isSameOrBefore(nextPeriodEnd)) {
-      if (current.isBetween(monthStart, monthEnd, 'day', '[]')) {
-        const dateKey = current.format('YYYY-MM-DD');
-        // 只有在用户没有手动标记时才显示预测
-        if (!calendarData[dateKey]) {
-          calendarData[dateKey] = {
-            selectedColor: colors.period + '80', // 浅粉色（50%透明度）
-            type: 'predicted_period',
-            customStyles: {
-              container: {
-                backgroundColor: colors.period + '80',
-                borderRadius: 16,
-              },
-              text: {
-                color: colors.white,
-                fontWeight: '600',
+    referenceDate = dayjs(preferences.lastMenstrualPeriod);
+  } else if (periods.length > 0) {
+    referenceDate = dayjs(periods[periods.length - 1].startDate);
+  }
+
+  if (referenceDate) {
+    const predictions = generateCyclePredictionsForMonth(
+      referenceDate, 
+      preferences.avgCycle, 
+      preferences.avgPeriod
+    );
+
+    // 标记所有预测的周期数据
+    predictions.forEach(prediction => {
+      // 标记预测的经期
+      let current = prediction.periodStart;
+      while (current.isSameOrBefore(prediction.periodEnd)) {
+        if (current.isBetween(monthStart, monthEnd, 'day', '[]')) {
+          const dateKey = current.format('YYYY-MM-DD');
+          // 只有在用户没有手动标记时才显示预测经期
+          if (!calendarData[dateKey]) {
+            // 所有预测经期使用统一颜色，不区分过去和未来
+            calendarData[dateKey] = {
+              selectedColor: colors.period + '80',
+              type: 'predicted_period',
+              customStyles: {
+                container: {
+                  backgroundColor: colors.period + '80',
+                  borderRadius: 16,
+                },
+                text: {
+                  color: colors.white,
+                  fontWeight: '600',
+                }
               }
-            }
-          };
+            };
+          }
         }
+        current = current.add(1, 'day');
       }
-      current = current.add(1, 'day');
-    }
-    
-    // 标记基于LMP的受孕窗口（浅蓝绿色）
-    current = lmpFertileStart;
-    while (current.isSameOrBefore(lmpFertileEnd)) {
-      if (current.isBetween(monthStart, monthEnd, 'day', '[]')) {
-        const dateKey = current.format('YYYY-MM-DD');
-        // 只有在没有其他标记时才显示受孕窗口
-        if (!calendarData[dateKey]) {
-          // 排卵日用深蓝绿色，其他受孕日用浅蓝绿色
-          const isOvulationDay = current.isSame(lmpOvulationDate, 'day');
-          calendarData[dateKey] = {
-            selectedColor: isOvulationDay ? colors.ovulation : colors.fertileLight,
-            type: isOvulationDay ? 'lmp_ovulation' : 'lmp_fertile',
-            customStyles: {
-              container: {
-                backgroundColor: isOvulationDay ? colors.ovulation : colors.fertileLight,
-                borderRadius: 16,
-              },
-              text: {
-                color: colors.white,
-                fontWeight: '600',
+
+      // 标记受孕窗口
+      current = prediction.fertileStart;
+      while (current.isSameOrBefore(prediction.fertileEnd)) {
+        if (current.isBetween(monthStart, monthEnd, 'day', '[]')) {
+          const dateKey = current.format('YYYY-MM-DD');
+          // 只有在没有其他标记时才显示受孕窗口
+          if (!calendarData[dateKey]) {
+            const isOvulationDay = current.isSame(prediction.ovulationDate, 'day');
+            
+            // 所有受孕窗口和排卵日使用统一颜色，不区分过去和未来
+            calendarData[dateKey] = {
+              selectedColor: isOvulationDay ? colors.ovulation : colors.fertileLight,
+              type: isOvulationDay ? 'ovulation' : 'fertile',
+              customStyles: {
+                container: {
+                  backgroundColor: isOvulationDay ? colors.ovulation : colors.fertileLight,
+                  borderRadius: 16,
+                },
+                text: {
+                  color: colors.white,
+                  fontWeight: '600',
+                }
               }
-            }
-          };
+            };
+          }
         }
+        current = current.add(1, 'day');
       }
-      current = current.add(1, 'day');
-    }
+    });
   }
 
   // 标记已记录的经期
@@ -285,61 +301,8 @@ export function getCalendarData(
     }
   });
 
-  // 预测数据（如果有当前周期信息）
-  if (cycleInfo) {
-    const ovulationDate = dayjs(cycleInfo.ovulationDate);
-    const fertileStart = dayjs(cycleInfo.fertileWindowStart);
-    const fertileEnd = dayjs(cycleInfo.fertileWindowEnd);
-    const nextPeriod = dayjs(cycleInfo.nextPeriodDate);
-
-    // 排卵日
-    if (ovulationDate.isBetween(monthStart, monthEnd, 'day', '[]')) {
-      const dateKey = ovulationDate.format('YYYY-MM-DD');
-      calendarData[dateKey] = {
-        ...calendarData[dateKey],
-        type: 'ovulation'
-      };
-    }
-
-    // 受孕窗口
-    let current = fertileStart;
-    while (current.isSameOrBefore(fertileEnd)) {
-      const dateKey = current.format('YYYY-MM-DD');
-      if (current.isBetween(monthStart, monthEnd, 'day', '[]') && 
-          (!calendarData[dateKey] || !calendarData[dateKey].type)) {
-        calendarData[dateKey] = {
-          type: 'fertile'
-        };
-      }
-      current = current.add(1, 'day');
-    }
-
-    // 如果没有LMP数据，使用原有的预测逻辑
-    if (!preferences.lastMenstrualPeriod) {
-      current = nextPeriod;
-      for (let i = 0; i < preferences.avgPeriod; i++) {
-        const dateKey = current.format('YYYY-MM-DD');
-        if (current.isBetween(monthStart, monthEnd, 'day', '[]')) {
-          calendarData[dateKey] = {
-            ...calendarData[dateKey],
-            selectedColor: colors.period + '80',
-            type: 'predicted',
-            customStyles: {
-              container: {
-                backgroundColor: colors.period + '80',
-                borderRadius: 16,
-              },
-              text: {
-                color: colors.white,
-                fontWeight: '600',
-              }
-            }
-          };
-        }
-        current = current.add(1, 'day');
-      }
-    }
-  }
+  // 注意：原有的单次预测逻辑已被上面的完整周期预测替代
+  // 新的预测逻辑会为每个月份生成完整的过去和未来周期预测
 
   return calendarData;
 }
