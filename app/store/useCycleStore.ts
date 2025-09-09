@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { apiClient } from '../lib/api';
 import { DEV_SEED, generateSeedData } from '../lib/seed';
 import StorageUtils from '../lib/StorageUtils';
+import { PredictionHistory, calculatePredictionHistory } from '../lib/cycle';
 
 export type PeriodEntry = {
   startDate: string;
@@ -57,6 +58,7 @@ interface CycleStore {
   periodLogs: string[];
   dailyLogs: DailyLog[];
   preferences: Preferences;
+  predictionHistory: PredictionHistory | null; // 新增：预测历史
   isLoading: boolean;
   error: string | null;
   
@@ -72,6 +74,7 @@ interface CycleStore {
   clearData: () => Promise<void>;
   loadSeedData: () => void;
   generateHistoricalCycles: (periodLogs: string[]) => any[];
+  updatePredictionHistory: () => void; // 新增：更新预测历史
   getCurrentUserId: () => Promise<string | null>;
   initializeUser: () => Promise<void>;
 }
@@ -89,6 +92,7 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
     reminders: true,
     healthSync: false
   },
+  predictionHistory: null, // 新增：预测历史初始值
   isLoading: false,
   error: null,
 
@@ -125,6 +129,10 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
     });
     
     console.log('更新后 store 中的 periodLogs:', get().periodLogs);
+    
+    // 更新预测历史
+    get().updatePredictionHistory();
+    
     console.log('触发 syncToServer...');
     get().syncToServer();
   },
@@ -593,6 +601,27 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
     }
     
     return cycles;
+  },
+
+  updatePredictionHistory: function() {
+    const state = get();
+    console.log('=== 更新预测历史 ===');
+    
+    try {
+      const newPredictionHistory = calculatePredictionHistory(state.periodLogs, state.preferences);
+      
+      set({
+        predictionHistory: newPredictionHistory
+      });
+      
+      console.log('预测历史已更新:', {
+        latestPrediction: newPredictionHistory.latestPrediction?.id,
+        totalPredictions: newPredictionHistory.historicalPredictions.length,
+        lastUpdated: newPredictionHistory.lastUpdated
+      });
+    } catch (error) {
+      console.error('更新预测历史失败:', error);
+    }
   },
 
   getCurrentUserId: async function() {
