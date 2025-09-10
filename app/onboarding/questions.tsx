@@ -1,136 +1,109 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Platform, StatusBar } from 'react-native';
 import { router } from 'expo-router';
+import dayjs from 'dayjs';
 import { useCycleStore } from '../store/useCycleStore';
 import { colors, radii, spacing, typography } from '../theme/tokens';
-import { getQuestions, Question, QuestionnaireAnswers } from '../lib/questionnaire';
-import InfoCard from '../components/InfoCard';
-import PeriodDateSelector from '../components/PeriodDateSelector';
-import WheelNumberPicker from '../components/WheelNumberPicker';
-import ReassuranceCard from '../components/ReassuranceCard';
+import { QUESTIONNAIRE_DATA } from '../lib/questionnaire';
+import QuestionCard from '../components/QuestionCard';
 
-export default function QuestionsScreen() {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<QuestionnaireAnswers>({});
-  const [selectedPeriodDates, setSelectedPeriodDates] = useState<string[]>([]);
+export default function OnboardingQuestionsScreen() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, any>>({});
   
   const setProfile = useCycleStore(state => state.setProfile);
   const setPreferences = useCycleStore(state => state.setPreferences);
-  
-  const questions = getQuestions();
-  const currentQuestion = questions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
-  const handleAnswer = (questionId: string, answer: any) => {
+  const currentQuestion = QUESTIONNAIRE_DATA[currentIndex];
+  
+  const handleAnswer = (answer: any) => {
     setAnswers(prev => ({
       ...prev,
-      [questionId]: answer
+      [currentQuestion.id]: answer
     }));
   };
 
-  const handleNext = () => {
-    if (isLastQuestion) {
-      // Save all answers and navigate to next screen
-      setProfile({ questionnaireAnswers: answers });
-      
-      // Save period dates if any were selected
-      if (selectedPeriodDates.length > 0) {
-        const sortedDates = [...selectedPeriodDates].sort();
-        const lastMenstrualPeriod = sortedDates[sortedDates.length - 1]; // Most recent date
-        
-        setPreferences({ lastMenstrualPeriod });
-        // Note: periodLogs will be set by the store when it processes the LMP
+  // 为数字题设置默认值
+  useEffect(() => {
+    if (currentQuestion.type === 'number' && !answers[currentQuestion.id]) {
+      let defaultValue;
+      if (currentQuestion.id === 'q_avg_cycle') {
+        defaultValue = 28;
+      } else if (currentQuestion.id === 'q_avg_period') {
+        defaultValue = 6;
+      } else {
+        defaultValue = currentQuestion.default;
       }
       
-      router.push('/onboarding/health-notifications');
+      if (defaultValue !== undefined) {
+        setAnswers(prev => ({
+          ...prev,
+          [currentQuestion.id]: defaultValue
+        }));
+      }
+    }
+  }, [currentQuestion.id, currentQuestion.type, currentQuestion.default, answers]);
+
+  const handleNext = () => {
+    if (currentIndex < QUESTIONNAIRE_DATA.length - 1) {
+      setCurrentIndex(prev => prev + 1);
     } else {
-      setCurrentQuestionIndex(prev => prev + 1);
+      // Save all answers and complete onboarding
+      saveAnswersAndComplete();
     }
   };
 
-  const handlePeriodDatesChange = (dates: string[]) => {
-    setSelectedPeriodDates(dates);
-    // Also save to answers for consistency
-    handleAnswer(currentQuestion.id, dates);
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+    }
   };
 
-  const handleSkipPeriodDates = () => {
-    // Skip period date selection and go to next question
-    setSelectedPeriodDates([]);
-    handleAnswer(currentQuestion.id, []);
-    handleNext();
+  const saveAnswersAndComplete = () => {
+    // Extract key data for preferences
+    console.log('saveAnswersAndComplete answers', answers);
+    const lmp = answers.q_lmp;
+    const avgCycle = answers.q_avg_cycle || 28;
+    const avgPeriod = answers.q_avg_period || 5;
+    console.log('saveAnswersAndComplete avgCycle', avgCycle);
+    console.log('saveAnswersAndComplete avgPeriod', avgPeriod);
+    const height = answers.q_height_cm;
+    
+    if (lmp) {
+      setPreferences({
+        lastMenstrualPeriod: lmp,
+        avgCycle,
+        avgPeriod,
+      });
+    }
+
+    // Save all questionnaire answers to profile
+    setProfile({
+      questionnaireAnswers: answers,
+      height,
+    });
+
+    router.push('/onboarding/done');
   };
 
-  const renderQuestion = () => {
-    if (!currentQuestion) return null;
-
-    // Handle period dates question specially
-    if (currentQuestion.type === 'period_dates') {
-      return (
-        <PeriodDateSelector
-          selectedDates={selectedPeriodDates}
-          onDatesChange={handlePeriodDatesChange}
-          onSkip={handleSkipPeriodDates}
-        />
-      );
+  const canContinue = () => {
+    const answer = answers[currentQuestion.id];
+    
+    // Info pages can always continue
+    if (currentQuestion.type === 'info') {
+      return true;
+    }
+    
+    if (currentQuestion.required && !answer) {
+      return false;
     }
 
-    // Handle number picker questions
-    if (currentQuestion.type === 'number_picker') {
-      const currentValue = answers[currentQuestion.id] || currentQuestion.defaultValue || 28;
-      
-      return (
-        <View style={styles.questionContainer}>
-          <InfoCard
-            title={currentQuestion.title}
-            body={currentQuestion.body}
-            onNext={handleNext}
-          />
-          
-          <View style={styles.pickerContainer}>
-            <WheelNumberPicker
-              value={currentValue}
-              onChange={(value) => handleAnswer(currentQuestion.id, value)}
-              min={currentQuestion.min || 1}
-              max={currentQuestion.max || 100}
-              step={currentQuestion.step || 1}
-              unit={currentQuestion.unit || 'days'}
-            />
-          </View>
-          
-          {currentQuestion.reassurance && (
-            <ReassuranceCard
-              title={currentQuestion.reassurance.title}
-              content={currentQuestion.reassurance.content}
-            />
-          )}
-        </View>
-      );
-    }
+    // For other types, check if answered
+    return answer !== undefined && answer !== null && answer !== '';
+  };
 
-    // Handle regular multiple choice questions
-    return (
-      <View style={styles.questionContainer}>
-        <InfoCard
-          title={currentQuestion.title}
-          body={currentQuestion.body}
-          actions={currentQuestion.options?.map(option => ({
-            id: option.id,
-            label: option.label,
-            kind: option.kind || 'secondary'
-          }))}
-          onNext={handleNext}
-          onActionPress={(optionId) => handleAnswer(currentQuestion.id, optionId)}
-        />
-        
-        {currentQuestion.reassurance && (
-          <ReassuranceCard
-            title={currentQuestion.reassurance.title}
-            content={currentQuestion.reassurance.content}
-          />
-        )}
-      </View>
-    );
+  const getProgressPercentage = () => {
+    return ((currentIndex + 1) / QUESTIONNAIRE_DATA.length) * 100;
   };
 
   return (
@@ -140,20 +113,47 @@ export default function QuestionsScreen() {
           <View style={styles.progressBar}>
             <View 
               style={[
-                styles.progressFill, 
-                { width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }
+                styles.progress, 
+                { width: `${getProgressPercentage()}%` }
               ]} 
             />
           </View>
           <Text style={styles.progressText}>
-            {currentQuestionIndex + 1} of {questions.length}
+            {currentIndex + 1} / {QUESTIONNAIRE_DATA.length}
           </Text>
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {renderQuestion()}
+        <QuestionCard
+          question={currentQuestion}
+          answer={answers[currentQuestion.id]}
+          onAnswer={handleAnswer}
+          onNext={handleNext}
+        />
       </ScrollView>
+
+      <View style={styles.navigation}>
+        {currentIndex > 0 && (
+          <TouchableOpacity style={styles.backButton} onPress={handlePrevious}>
+            <Text style={styles.backButtonText}>Previous</Text>
+          </TouchableOpacity>
+        )}
+        
+        <TouchableOpacity 
+          style={[
+            styles.nextButton, 
+            !canContinue() && styles.buttonDisabled,
+            currentIndex === 0 && styles.nextButtonFull
+          ]} 
+          onPress={handleNext}
+          disabled={!canContinue()}
+        >
+          <Text style={styles.nextButtonText}>
+            {currentIndex === QUESTIONNAIRE_DATA.length - 1 ? 'Complete' : 'Next'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -178,24 +178,53 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginBottom: spacing(1),
   },
-  progressFill: {
+  progress: {
     height: '100%',
     backgroundColor: colors.primary,
     borderRadius: 2,
   },
   progressText: {
-    ...typography.caption,
+    ...typography.small,
     color: colors.textSecondary,
   },
   content: {
     flex: 1,
     paddingHorizontal: spacing(3),
   },
-  questionContainer: {
-    paddingVertical: spacing(2),
+  navigation: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing(3),
+    paddingBottom: spacing(3),
+    gap: spacing(2),
   },
-  pickerContainer: {
+  backButton: {
+    flex: 1,
+    backgroundColor: colors.gray100,
+    borderRadius: radii.card,
+    paddingVertical: spacing(2),
     alignItems: 'center',
-    marginVertical: spacing(3),
+  },
+  backButtonText: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  nextButton: {
+    flex: 2,
+    backgroundColor: colors.primary,
+    borderRadius: radii.card,
+    paddingVertical: spacing(2),
+    alignItems: 'center',
+  },
+  nextButtonFull: {
+    flex: 1,
+  },
+  nextButtonText: {
+    ...typography.body,
+    color: colors.white,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    backgroundColor: colors.gray300,
   },
 });
