@@ -1,215 +1,99 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography } from '../theme/tokens';
+// 用户相关类型
+export interface User {
+  id: string;
+  email: string;
+  birthYear: number;
+  cycleLength: number;
+  periodLength: number;
+  lastPeriodDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-interface Props {
+// 周期相关类型
+export interface Cycle {
+  id: string;
+  userId: string;
+  startDate: string;
+  endDate?: string;
+  length: number;
+  periodLength: number;
+  phase: CyclePhase;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 周期阶段
+export type CyclePhase = 'menstrual' | 'follicular' | 'ovulation' | 'luteal';
+
+// 症状相关类型
+export interface Symptom {
+  id: string;
+  name: string;
+  category: SymptomCategory;
+  severity?: number;
+  date: string;
+  userId: string;
+}
+
+export type SymptomCategory = 'physical' | 'emotional' | 'behavioral';
+
+// 心情相关类型
+export interface Mood {
+  id: string;
+  userId: string;
+  date: string;
+  mood: MoodType;
+  intensity: number;
+  notes?: string;
+}
+
+export type MoodType = 'happy' | 'sad' | 'anxious' | 'irritable' | 'calm' | 'energetic' | 'tired';
+
+// API 响应类型
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+// 表单相关类型
+export interface LoginForm {
+  email: string;
+  password: string;
+}
+
+export interface RegisterForm {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  birthYear: number;
+}
+
+// 通知相关类型
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
   title: string;
-  body?: string;
-  image?: any;
-  actions?: { id: string; label: string; kind?: 'primary' | 'secondary' }[];
-  onNext: () => void;
-  onActionPress?: (id: string) => void;
+  message: string;
+  scheduledDate: string;
+  isRead: boolean;
+  createdAt: string;
 }
 
-export default function InfoCard({ title, body, image, actions, onNext, onActionPress }: Props) {
-  return (
-    <View style={styles.container}>
-      {image && <Image source={image} style={styles.image} resizeMode="contain" />}
-      
-      <Text style={styles.title}>{title}</Text>
-      
-      {body && <Text style={styles.body}>{body}</Text>}
-      
-      {actions && actions.length > 0 && (
-        <View style={styles.actionsContainer}>
-          {actions.map((action) => (
-          <TouchableOpacity
-            key={action.id}
-            onPress={() => {
-              if (onActionPress) {
-                onActionPress(action.id);
-              }
-            }}
-            style={[
-              styles.actionButton,
-              action.kind === 'secondary' ? styles.secondaryButton : styles.primaryButton
-            ]}
-          >
-              <Text style={[
-                styles.actionText,
-                action.kind === 'secondary' ? styles.secondaryText : styles.primaryText
-              ]}>
-                {action.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-      
-      <TouchableOpacity onPress={onNext} style={[styles.nextButton]}>
-        <Text style={styles.nextButtonText}>Next</Text>
-      </TouchableOpacity>
-    </View>
-  );
+export type NotificationType = 'period_reminder' | 'ovulation_reminder' | 'cycle_insight' | 'health_tip';
+
+// 目标相关类型
+export interface Goal {
+  id: string;
+  userId: string;
+  type: GoalType;
+  description: string;
+  targetDate?: string;
+  isCompleted: boolean;
+  createdAt: string;
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.white,
-    borderRadius: radii.card,
-    padding: spacing(3),
-    marginBottom: spacing(2),
-    alignItems: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  image: {
-    width: '100%',
-    height: 160,
-    marginBottom: spacing(2),
-  },
-  title: {
-    ...typography.h3,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing(1),
-    lineHeight: 28,
-  },
-  body: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: spacing(2),
-  },
-  actionsContainer: {
-    width: '100%',
-    marginBottom: spacing(2),
-  },
-  actionButton: {
-    width: '100%',
-    paddingVertical: spacing(1.5),
-    paddingHorizontal: spacing(2),
-    borderRadius: radii.medium,
-    alignItems: 'center',
-    marginBottom: spacing(1),
-  },
-  primaryButton: {
-    backgroundColor: colors.primary + '20',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  secondaryButton: {
-    backgroundColor: colors.gray100,
-    borderWidth: 1,
-    borderColor: colors.gray300,
-  },
-  actionText: {
-    ...typography.caption,
-    fontWeight: '600',
-  },
-  primaryText: {
-    color: colors.primary,
-  },
-  secondaryText: {
-    color: colors.text,
-  },
-  nextButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.medium,
-    paddingVertical: spacing(1.5),
-    paddingHorizontal: spacing(4),
-    width: '100%',
-    alignItems: 'center',
-  },
-  nextButtonText: {
-    ...typography.body,
-    color: colors.white,
-    fontWeight: '600',
-  },
-  smallTitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing(1),
-  },
-  cycleIllustration: {
-    width: '100%',
-    height: 200,
-    marginBottom: spacing(3),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cycleChart: {
-    width: 280,
-    height: 160,
-    position: 'relative',
-    backgroundColor: colors.gray100,
-    borderRadius: radii.card,
-    overflow: 'hidden',
-  },
-  hormoneCurve: {
-    position: 'absolute',
-    top: '30%',
-    left: '10%',
-    right: '10%',
-    height: 3,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    transform: [{ scaleY: 2 }],
-  },
-  phaseIndicator: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  phaseEmoji: {
-    fontSize: 18,
-  },
-  phaseLabels: {
-    position: 'absolute',
-    bottom: spacing(2),
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: spacing(2),
-  },
-  phaseLabel: {
-    alignItems: 'center',
-  },
-  phaseDot: {
-    width: 20,
-    height: 4,
-    borderRadius: 2,
-    marginBottom: spacing(0.5),
-  },
-  phaseIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  phaseIconText: {
-    fontSize: 12,
-  },
-});
+export type GoalType = 'track_cycle' | 'understand_symptoms' | 'improve_health' | 'family_planning';
