@@ -13,6 +13,7 @@ export default function OnboardingQuestionsScreen() {
   
   const setProfile = useCycleStore(state => state.setProfile);
   const setPreferences = useCycleStore(state => state.setPreferences);
+  const setPeriodLogs = useCycleStore(state => state.setPeriodLogs);
 
   const currentQuestion = QUESTIONNAIRE_DATA[currentIndex];
   
