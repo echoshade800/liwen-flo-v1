@@ -136,7 +136,11 @@ export default function CalendarScreen() {
   }, [periodLogs, preferences.lastMenstrualPeriod, preferences.avgCycle]);
 
   const markedDates = getCalendarData(periods, preferences, currentMonth, periodLogs);
-  console.log('markedDates', markedDates);
+  console.log('=== Calendar Screen Debug ===');
+  console.log('Current month:', currentMonth);
+  console.log('Period logs from store:', periodLogs);
+  console.log('Generated markedDates:', markedDates);
+  console.log('MarkedDates keys:', Object.keys(markedDates));
   const cycleInfo = calculateCurrentCycle(periods, preferences);
   const nextPeriodPrediction = getNextPeriodPrediction(preferences);
   

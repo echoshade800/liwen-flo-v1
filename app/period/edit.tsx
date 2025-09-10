@@ -64,11 +64,13 @@ export default function PeriodEditScreen() {
     try {
       console.log('=== Period Edit Save Debug ===');
       console.log('原始 selectedDates:', selectedDates);
+      console.log('selectedDates 类型和内容:', selectedDates.map((d, i) => `${i}: "${d}" (${typeof d})`));
       console.log('原始 periodLogs (从store):', periodLogs);
       
       // 保存前再次过滤掉未来日期，保证数据安全
       const filtered = selectedDates.filter(d => !dayjs(d).isAfter(dayjs(), 'day'));
       console.log('过滤后的 filtered dates:', filtered);
+      console.log('filtered dates 详细:', filtered.map((d, i) => `${i}: "${d}" (${typeof d})`));
       
       // 同步更新 LMP（最近一次经期开始），不生成额外日期
       const lmp = findLastPeriodStart(filtered);
@@ -81,11 +83,13 @@ export default function PeriodEditScreen() {
       useCycleStore.setState((state) => ({
         preferences: { ...state.preferences, lastMenstrualPeriod: lmp || undefined },
         periodLogs: filtered,
+        lastUpdated: Date.now(), // 强制触发重新渲染
         error: null
       }));
       
       // 手动触发一次同步，包含所有更新
       console.log('调用 syncToServer，发送合并后的数据');
+      console.log('即将同步的 periodLogs:', filtered);
       useCycleStore.getState().syncToServer();
       
       // 等待同步完成 - 检查 store 中的数据是否已更新

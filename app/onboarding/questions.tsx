@@ -63,6 +63,8 @@ export default function OnboardingQuestionsScreen() {
     // Extract key data for preferences
     console.log('saveAnswersAndComplete answers', answers);
     const periodDates = answers.q_period_dates;
+    console.log('=== saveAnswersAndComplete Debug ===');
+    console.log('Period dates from answers:', periodDates);
     const avgCycle = answers.q_avg_cycle || 28;
     const avgPeriod = answers.q_avg_period || 5;
     console.log('saveAnswersAndComplete avgCycle', avgCycle);
@@ -71,12 +73,16 @@ export default function OnboardingQuestionsScreen() {
     
     // Check if user selected period dates to determine next route
     const hasSelectedPeriodDates = periodDates && Array.isArray(periodDates) && periodDates.length > 0;
+    console.log('Has selected period dates:', hasSelectedPeriodDates);
     
     if (hasSelectedPeriodDates) {
       // Calculate predicted next period date
       const sortedDates = [...periodDates].sort();
       const lastPeriodStart = sortedDates[0]; // Earliest date as LMP
+      console.log('Sorted period dates:', sortedDates);
+      console.log('Last period start (LMP):', lastPeriodStart);
       const predictedDate = dayjs(lastPeriodStart).add(avgCycle, 'day').format('YYYY-MM-DD');
+      console.log('Predicted next period date:', predictedDate);
       
       // Save period dates to periodLogs and set LMP
       setPreferences({
@@ -87,6 +93,7 @@ export default function OnboardingQuestionsScreen() {
       
       // Save all selected dates to periodLogs
       const setPeriodLogs = useCycleStore.getState().setPeriodLogs;
+      console.log('Calling setPeriodLogs with:', periodDates);
       setPeriodLogs(periodDates);
       
       // Save all questionnaire answers to profile

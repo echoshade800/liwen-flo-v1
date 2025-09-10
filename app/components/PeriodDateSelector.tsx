@@ -25,9 +25,14 @@ export default function PeriodDateSelector({
 
   const handleDayPress = (day: any) => {
     const dateString = day.dateString;
+    console.log('=== PeriodDateSelector Debug ===');
+    console.log('Selected dateString:', dateString);
+    console.log('Current selectedDates before update:', selectedDates);
+    
     
     // Prevent selecting future dates
     if (dayjs(dateString).isAfter(dayjs(), 'day')) {
+      console.log('Ignoring future date:', dateString);
       return;
     }
 
@@ -37,6 +42,7 @@ export default function PeriodDateSelector({
     if (selectedDates.includes(dateString)) {
       // If clicking on an already selected date, remove it
       const newDates = selectedDates.filter(date => date !== dateString);
+      console.log('Removing date, new selectedDates:', newDates);
       onDatesChange(newDates);
       return;
     }
@@ -55,10 +61,14 @@ export default function PeriodDateSelector({
       for (let i = 0; i < 5; i++) {
         const periodDate = selectedDate.add(i, 'day');
         if (!periodDate.isAfter(dayjs(), 'day')) {
-          newPeriodDates.push(periodDate.format('YYYY-MM-DD'));
+          const formattedDate = periodDate.format('YYYY-MM-DD');
+          newPeriodDates.push(formattedDate);
+          console.log('New period auto-selecting date:', formattedDate);
         }
       }
-      onDatesChange([...selectedDates, ...newPeriodDates]);
+      const combinedDates = [...selectedDates, ...newPeriodDates].sort();
+      console.log('New period - combined dates:', combinedDates);
+      onDatesChange(combinedDates);
     } else {
       // First selection or extending existing period
       if (selectedDates.length === 0) {
@@ -92,9 +102,12 @@ export default function PeriodDateSelector({
             },
             text: {
               color: colors.white,
-              fontWeight: '600',
+              const formattedDate = periodDate.format('YYYY-MM-DD');
+              initialDates.push(formattedDate);
+              console.log('Auto-selecting date:', formattedDate);
             }
           }
+          console.log('First selection - all dates:', initialDates);
         };
       }
     });
@@ -112,7 +125,9 @@ export default function PeriodDateSelector({
           text: {
             color: colors.primary,
             fontWeight: '600',
-          }
+          const newDates = [...selectedDates, dateString].sort();
+          console.log('Adding single date, new selectedDates:', newDates);
+          onDatesChange(newDates);
         }
       };
     }

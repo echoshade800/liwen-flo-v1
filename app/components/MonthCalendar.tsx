@@ -35,6 +35,12 @@ export default function MonthCalendar({
 }: MonthCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(dayjs().format('YYYY-MM-DD'));
 
+  console.log('=== MonthCalendar Debug ===');
+  console.log('Received markedDates:', markedDates);
+  console.log('MarkedDates keys:', Object.keys(markedDates));
+  console.log('Current month state:', currentMonth);
+  console.log('Selected date:', selectedDate);
+
   const calendarTheme: CalendarProps['theme'] = {
     backgroundColor: colors.white,
     calendarBackground: colors.white,

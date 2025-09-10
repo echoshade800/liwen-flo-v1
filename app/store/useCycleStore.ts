@@ -123,16 +123,41 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
   setPeriodLogs: function(dates: string[]) {
     console.log('=== setPeriodLogs Debug ===');
     console.log('接收到的新 dates:', dates);
+    console.log('dates 类型:', typeof dates, 'isArray:', Array.isArray(dates));
+    console.log('dates 内容详细:', dates.map((d, i) => `${i}: "${d}" (${typeof d})`));
     console.log('当前 store 中的 periodLogs:', get().periodLogs);
+    
+    // 确保所有日期都是有效的 YYYY-MM-DD 格式
+    const validatedDates = dates
+      .filter(date => {
+        const isValid = dayjs(date).isValid();
+        if (!isValid) {
+          console.warn('Invalid date found:', date);
+        }
+        return isValid;
+      })
+      .map(date => dayjs(date).format('YYYY-MM-DD'))
+      .filter((date, index, arr) => arr.indexOf(date) === index) // 去重
+      .sort();
+    
+    console.log('验证后的 validatedDates:', validatedDates);
     
     set(function(state) {
       return {
-        periodLogs: dates,
+        periodLogs: validatedDates,
         error: null
       };
     });
     
     console.log('更新后 store 中的 periodLogs:', get().periodLogs);
+    
+    // 强制触发重新渲染 - 通过更新一个时间戳
+    set(function(state) {
+      return {
+        ...state,
+        lastUpdated: Date.now()
+      };
+    });
     
     // 更新预测历史
     get().updatePredictionHistory();
