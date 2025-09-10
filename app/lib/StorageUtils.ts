@@ -26,35 +26,33 @@ class StorageUtils {
    */
   static async getUserData(): Promise<UserData | null> {
     try {
-      const userData = await AsyncStorage.getItem('userData');
-      return userData ? JSON.parse(userData) : null;
-      //20250905-调试内容
-      // return {
-      //   "vipLevel": 0,
-      //   "passId": "ijacQFlIUOQFnfwZQtSaL0bpvk6bzf/zSu2l/WtGxOo=",
-      //   "availableAmount": 0,
-      //   "clientIp": "103.229.54.21",
-      //   "id": 9,
-      //   "uid": "10000000000000462",
-      //   "userName": "USER0IGL9PHYS",
-      //   "avatar": "",
-      //   "inviteCode": "",
-      //   "invitedCode": "-1",
-      //   "inviterId": -1,
-      //   "thirdSource": "GOOGLE",
-      //   "thirdAccount": "",
-      //   "thirdId": "",
-      //   "deviceId": "",
-      //   "deviceToken": "",
-      //   "email": "fan462@gmail.com",
-      //   "password": "",
-      //   "country": "Hong Kong/HK",
-      //   "city": "unknow",
-      //   "fromChannel": "",
-      //   "timeZone": "",
-      //   "createTime": 1757042933014,
-      //   "canSetPassword": false
-      // }
+      // const userData = await AsyncStorage.getItem('userData');
+      // return userData ? JSON.parse(userData) : null;
+      // 20250905-调试内容
+      return {
+        "vipLevel": 0,
+        "passId": "ijacQFlIUOQFnfwZQtSaL0bpvk6bzf/zSu2l/WtGxOo=",
+        "availableAmount": 0,
+        "id": 9,
+        "uid": StorageUtils.generateUID(),
+        "userName": "USER0IGL9PHYS",
+        "avatar": "",
+        "invitedCode": "-1",
+        "inviterId": -1,
+        "thirdSource": "GOOGLE",
+        "thirdAccount": "",
+        "thirdId": "",
+        "deviceId": "",
+        "deviceToken": "",
+        "email": StorageUtils.generateGmail(),
+        "password": "",
+        "country": "Hong Kong/HK",
+        "city": "unknow",
+        "fromChannel": "",
+        "timeZone": "",
+        "createTime": Date.now(),
+        "canSetPassword": false
+      }
     } catch (error) {
       console.error('本地获取用户数据失败:', error);
       return null;
@@ -222,6 +220,18 @@ class StorageUtils {
       console.error('获取用户基本信息失败:', error);
       return null;
     }
+  }
+
+  /**
+   * 生成唯一用户ID
+   * @returns {string} 唯一用户ID
+   */
+  static generateUID() {
+    return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  static generateGmail() {
+    return `fan${Math.random().toString(36).substr(2, 9)}@gmail.com`;
   }
 }
 
