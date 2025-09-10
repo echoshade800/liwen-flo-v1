@@ -11,7 +11,11 @@ import EmojiOption from '../components/EmojiOption';
 import BrokenHealthKit, { HealthKitPermissions } from "react-native-health";
 const NativeModules = require("react-native").NativeModules;
 const AppleHealthKit = NativeModules.AppleHealthKit as typeof BrokenHealthKit;
-AppleHealthKit.Constants = BrokenHealthKit.Constants;
+
+// Only set Constants if AppleHealthKit is available
+if (AppleHealthKit && BrokenHealthKit.Constants) {
+  AppleHealthKit.Constants = BrokenHealthKit.Constants;
+}
 
 const FEELING_OPTIONS = [
   { id: 'energetic', emoji: '⚡', text: 'Energetic' },
@@ -84,7 +88,7 @@ export default function DailyInsightsScreen() {
 
   // 从健康应用获取所有健康数据
   const fetchAllHealthData = async () => {
-    if (Platform.OS !== 'ios') {
+    if (Platform.OS !== 'ios' || !AppleHealthKit) {
       console.log('健康数据同步仅在 iOS 设备上可用');
       return;
     }

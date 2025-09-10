@@ -8,7 +8,11 @@ import { colors, radii, spacing, typography } from '../theme/tokens';
 import BrokenHealthKit, { HealthKitPermissions } from "react-native-health";
 const NativeModules = require("react-native").NativeModules;
 const AppleHealthKit = NativeModules.AppleHealthKit as typeof BrokenHealthKit;
-AppleHealthKit.Constants = BrokenHealthKit.Constants;
+
+// Only set Constants if AppleHealthKit is available
+if (AppleHealthKit && BrokenHealthKit.Constants) {
+  AppleHealthKit.Constants = BrokenHealthKit.Constants;
+}
 
 export default function PermissionsAndTermsScreen() {
   const [isRequestingPermissions, setIsRequestingPermissions] = useState(false);
@@ -35,7 +39,7 @@ export default function PermissionsAndTermsScreen() {
   };
 
   const requestHealthPermissions = async () => {
-    if (Platform.OS !== 'ios') {
+    if (Platform.OS !== 'ios' || !AppleHealthKit) {
       // Android 或其他平台直接跳转
       router.push('/onboarding/goal-selection');
       return;
