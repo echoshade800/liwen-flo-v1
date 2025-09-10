@@ -161,11 +161,7 @@ export default function PeriodDateSelector({
       </View>
 
       <View style={styles.footer}>
-        {hasSelectedDates ? (
-          <TouchableOpacity style={styles.nextButton} onPress={onNext}>
-            <Text style={styles.nextButtonText}>Next</Text>
-          </TouchableOpacity>
-        ) : (
+        {!hasSelectedDates && (
           <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
             <Ionicons name="help-circle-outline" size={20} color={colors.fertileLight} />
             <Text style={styles.skipButtonText}>I don't remember</Text>
