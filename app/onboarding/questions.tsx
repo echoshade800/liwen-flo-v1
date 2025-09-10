@@ -69,89 +69,70 @@ export default function OnboardingQuestionsScreen() {
   };
 
   const saveAnswersAndComplete = () => {
-    // Extract key data for preferences
-    console.log('=== Questions saveAnswersAndComplete ===');
-    console.log('所有问卷答案:', answers);
+    console.log('[Questions] 开始保存问卷答案并完成设置');
+    console.log('[Questions] 所有答案数据:', answers);
     
     const periodDates = answers.q_period_dates;
-    console.log('提取的经期日期:', periodDates);
-    console.log('日期数据详情:', {
-      type: typeof periodDates,
-      isArray: Array.isArray(periodDates),
-      length: Array.isArray(periodDates) ? periodDates.length : 'N/A',
-      content: periodDates
-    });
+    console.log('[Questions] 提取的经期日期数据:', periodDates);
     
     const avgCycle = answers.q_avg_cycle || 28;
     const avgPeriod = answers.q_avg_period || 5;
-    
     const height = answers.q_height_cm;
     
-    // Check if user selected period dates to determine next route
-    const hasSelectedPeriodDates = periodDates && Array.isArray(periodDates) && periodDates.length > 0;
-    console.log('是否有有效的经期日期选择:', hasSelectedPeriodDates);
+    // 检查是否有选择经期日期
+    const hasValidPeriodDates = Array.isArray(periodDates) && periodDates.length > 0;
+    console.log('[Questions] 是否有有效经期日期:', hasValidPeriodDates, '数量:', hasValidPeriodDates ? periodDates.length : 0);
     
-    if (hasSelectedPeriodDates) {
-      // Calculate predicted next period date
+    if (hasValidPeriodDates) {
+      console.log('[Questions] 开始处理经期日期数据');
+      
+      // 计算预测的下次经期日期
       const sortedDates = [...periodDates].sort();
-      const lastPeriodStart = sortedDates[0]; // Earliest date as LMP
-      console.log('排序后的日期:', sortedDates);
-      console.log('设定 LMP 为:', lastPeriodStart);
+      const lastPeriodStart = sortedDates[sortedDates.length - 1]; // 最新日期作为LMP
+      console.log('[Questions] 排序后的日期:', sortedDates);
+      console.log('[Questions] 设定LMP为:', lastPeriodStart);
       
       const predictedDate = dayjs(lastPeriodStart).add(avgCycle, 'day').format('YYYY-MM-DD');
-      console.log('预测下次经期:', predictedDate);
+      console.log('[Questions] 预测下次经期:', predictedDate);
       
-      // Save period dates to periodLogs and set LMP
-      console.log('=== 开始保存数据到 Store ===');
+      // 保存数据到Store
+      console.log('[Questions] 保存偏好设置...');
       setPreferences({
         lastMenstrualPeriod: lastPeriodStart,
         avgCycle,
         avgPeriod,
       });
-      console.log('偏好设置已保存');
       
-      // Save all selected dates to periodLogs
-      console.log('调用 setPeriodLogs，传入日期:', periodDates);
-      const setPeriodLogs = useCycleStore.getState().setPeriodLogs;
+      console.log('[Questions] 保存经期日期到periodLogs...');
       setPeriodLogs(periodDates);
       
-      // 验证保存结果
-      const currentState = useCycleStore.getState();
-      console.log('Store 验证 - periodLogs:', currentState.periodLogs);
-      console.log('Store 验证 - LMP:', currentState.preferences.lastMenstrualPeriod);
-      
-      // Save all questionnaire answers to profile
+      console.log('[Questions] 保存问卷答案到profile...');
       setProfile({
         questionnaireAnswers: answers,
         height,
       });
       
-      console.log('导航到预测页面，参数:', predictedDate);
-      
-      // Navigate to prediction page with calculated date
+      console.log('[Questions] 导航到预测页面，预测日期:', predictedDate);
       router.push({
         pathname: '/onboarding/period-prediction',
         params: { predictedDate }
       });
-      return;
+    } else {
+      console.log('[Questions] 没有选择经期日期，保存基本设置');
+      
+      setPreferences({
+        avgCycle,
+        avgPeriod,
+      });
+
+      setProfile({
+        questionnaireAnswers: answers,
+        height,
+      });
+
+      console.log('[Questions] 直接导航到完成页面');
+      router.push('/onboarding/done');
     }
-    
-    // If no period dates selected, save preferences without LMP
-    console.log('未选择经期日期，保存基本设置');
-    setPreferences({
-      avgCycle,
-      avgPeriod,
-    });
-
-    // Save all questionnaire answers to profile
-    setProfile({
-      questionnaireAnswers: answers,
-      height,
-    });
-
-    // Navigate directly to done page
-    console.log('直接导航到完成页面');
-    router.push('/onboarding/done');
   };
 
   const canContinue = () => {

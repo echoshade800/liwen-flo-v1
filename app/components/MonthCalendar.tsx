@@ -35,13 +35,7 @@ export default function MonthCalendar({
 }: MonthCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(dayjs().format('YYYY-MM-DD'));
 
-  console.log('=== MonthCalendar 组件渲染 ===');
-  console.log('接收到的标记数据:', {
-    markedDates: Object.keys(markedDates),
-    count: Object.keys(markedDates).length,
-    currentMonth: currentMonth,
-    selectedDate: selectedDate
-  });
+  console.log('[MonthCalendar] 接收到的标记数据:', Object.keys(markedDates));
 
   const calendarTheme: CalendarProps['theme'] = {
     backgroundColor: colors.white,

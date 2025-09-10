@@ -122,51 +122,27 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
   },
 
   setPeriodLogs: function(dates: string[]) {
-    console.log('=== Store setPeriodLogs ===');
-    console.log('接收参数:', {
-      dates: dates,
-      type: typeof dates,
-      isArray: Array.isArray(dates),
-      length: Array.isArray(dates) ? dates.length : 'N/A'
-    });
-    console.log('当前 Store periodLogs:', get().periodLogs);
+    console.log('[Store] setPeriodLogs 接收数据:', dates);
     
-    // 确保所有日期都是有效的 YYYY-MM-DD 格式
-    const validatedDates = dates
-      .filter(date => {
-        const isValid = dayjs(date).isValid();
-        if (!isValid) {
-          console.warn('发现无效日期:', date);
-        }
-        return isValid;
-      })
+    // 简单验证和格式化
+    const cleanDates = dates
+      .filter(date => date && dayjs(date).isValid())
       .map(date => dayjs(date).format('YYYY-MM-DD'))
-      .filter((date, index, arr) => arr.indexOf(date) === index) // 去重
+      .filter((date, index, arr) => arr.indexOf(date) === index)
       .sort();
     
-    console.log('验证和格式化后的日期:', validatedDates);
+    console.log('[Store] 清理后的日期数据:', cleanDates);
     
     set(function(state) {
       return {
-        periodLogs: validatedDates,
+        periodLogs: cleanDates,
         error: null
       };
     });
     
-    console.log('Store 更新完成，新的 periodLogs:', get().periodLogs);
+    console.log('[Store] periodLogs已更新为:', get().periodLogs);
     
-    // 强制触发重新渲染 - 通过更新一个时间戳
-    set(function(state) {
-      return {
-        ...state,
-        lastUpdated: Date.now()
-      };
-    });
-    
-    // 更新预测历史
-    get().updatePredictionHistory();
-    
-    console.log('开始同步到服务器...');
+    // 同步到服务器
     get().syncToServer();
   },
   
