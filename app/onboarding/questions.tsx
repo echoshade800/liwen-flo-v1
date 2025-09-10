@@ -13,6 +13,7 @@ export default function OnboardingQuestionsScreen() {
   
   const setProfile = useCycleStore(state => state.setProfile);
   const setPreferences = useCycleStore(state => state.setPreferences);
+  const setPeriodLogs = useCycleStore(state => state.setPeriodLogs);
 
   const currentQuestion = QUESTIONNAIRE_DATA[currentIndex];
   
@@ -103,17 +104,15 @@ export default function OnboardingQuestionsScreen() {
       
       // Save period dates to periodLogs and set LMP
       console.log('=== 开始保存数据到 Store ===');
+      console.log('调用 setPeriodLogs，传入日期数组:', periodDates);
+      setPeriodLogs(periodDates);
+      
       setPreferences({
         lastMenstrualPeriod: lastPeriodStart,
         avgCycle,
         avgPeriod,
       });
       console.log('偏好设置已保存');
-      
-      // Save all selected dates to periodLogs
-      console.log('调用 setPeriodLogs，传入日期:', periodDates);
-      const setPeriodLogs = useCycleStore.getState().setPeriodLogs;
-      setPeriodLogs(periodDates);
       
       // 验证保存结果
       const currentState = useCycleStore.getState();

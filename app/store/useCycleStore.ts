@@ -129,7 +129,6 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
       isArray: Array.isArray(dates),
       length: Array.isArray(dates) ? dates.length : 'N/A'
     });
-    console.log('当前 Store periodLogs:', get().periodLogs);
     
     // 确保所有日期都是有效的 YYYY-MM-DD 格式
     const validatedDates = dates
@@ -155,19 +154,11 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
     
     console.log('Store 更新完成，新的 periodLogs:', get().periodLogs);
     
-    // 强制触发重新渲染 - 通过更新一个时间戳
-    set(function(state) {
-      return {
-        ...state,
-        lastUpdated: Date.now()
-      };
-    });
-    
-    // 更新预测历史
-    get().updatePredictionHistory();
-    
-    console.log('开始同步到服务器...');
-    get().syncToServer();
+    // 立即同步到服务器
+    setTimeout(() => {
+      console.log('开始同步到服务器...');
+      get().syncToServer();
+    }, 100);
   },
   
   // 更新每日日志，包括症状数据
