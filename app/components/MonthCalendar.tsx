@@ -83,6 +83,7 @@ export default function MonthCalendar({
         text: {
           color: colors.primary,
           fontWeight: '600',
+          fontSize: 12,
         }
       }
     };
@@ -101,6 +102,30 @@ export default function MonthCalendar({
     };
   }
 
+  // 为今天添加 "Today" 标签
+  if (processedMarkedDates[today]) {
+    processedMarkedDates[today] = {
+      ...processedMarkedDates[today],
+      customStyles: {
+        ...processedMarkedDates[today].customStyles,
+        text: {
+          ...processedMarkedDates[today].customStyles?.text,
+          fontSize: 10,
+        }
+      },
+      // 添加今天的标记文本
+      marked: true,
+      dotColor: 'transparent',
+      // 使用自定义渲染来显示 "Today"
+      customStyles: {
+        ...processedMarkedDates[today].customStyles,
+        text: {
+          ...processedMarkedDates[today].customStyles?.text,
+          fontSize: 10,
+        }
+      }
+    };
+  }
   const handleMonthChange = (month: any) => {
     const monthString = dayjs(month.dateString).format('YYYY-MM');
     setCurrentMonth(month.dateString);
@@ -120,6 +145,53 @@ export default function MonthCalendar({
               selectedColor: colors.primary,
             }
           })
+        }}
+        dayComponent={({ date, state }) => {
+          const dateString = date?.dateString;
+          const isToday = dateString === today;
+          const isSelected = dateString === selectedDate;
+          const markedData = processedMarkedDates[dateString || ''];
+          
+          // 获取日期的样式
+          const containerStyle = markedData?.customStyles?.container || {};
+          const textStyle = markedData?.customStyles?.text || {};
+          
+          // 如果是选中日期，使用选中样式
+          const finalContainerStyle = isSelected ? {
+            backgroundColor: colors.primary,
+            borderRadius: 16,
+            ...containerStyle
+          } : containerStyle;
+          
+          const finalTextStyle = isSelected ? {
+            color: colors.white,
+            fontWeight: '600',
+            ...textStyle
+          } : textStyle;
+          
+          return (
+            <TouchableOpacity
+              style={[styles.dayContainer, finalContainerStyle]}
+              onPress={() => onDaySelect(dateString || '')}
+              disabled={state === 'disabled'}
+            >
+              <Text style={[
+                styles.dayText,
+                state === 'disabled' && styles.disabledText,
+                finalTextStyle
+              ]}>
+                {date?.day}
+              </Text>
+              {isToday && (
+                <Text style={[
+                  styles.todayLabel,
+                  isSelected && styles.todayLabelSelected
+                ]}>
+                  Today
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
         }}
         onDayPress={(day) => onDaySelect(day.dateString)}
         onMonthChange={handleMonthChange}
@@ -192,5 +264,31 @@ const styles = StyleSheet.create({
   legendText: {
     ...typography.small,
     color: colors.textSecondary,
+  },
+  dayContainer: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  dayText: {
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  disabledText: {
+    color: colors.gray300,
+  },
+  todayLabel: {
+    fontSize: 8,
+    color: colors.primary,
+    fontWeight: '600',
+    position: 'absolute',
+    bottom: -2,
+    textAlign: 'center',
+  },
+  todayLabelSelected: {
+    color: colors.white,
   },
 });
