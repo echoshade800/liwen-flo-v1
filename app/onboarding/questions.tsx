@@ -1,215 +1,201 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Platform, StatusBar } from 'react-native';
+import { router } from 'expo-router';
+import { useCycleStore } from '../store/useCycleStore';
 import { colors, radii, spacing, typography } from '../theme/tokens';
+import { getQuestions, Question, QuestionnaireAnswers } from '../lib/questionnaire';
+import InfoCard from '../components/InfoCard';
+import PeriodDateSelector from '../components/PeriodDateSelector';
+import WheelNumberPicker from '../components/WheelNumberPicker';
+import ReassuranceCard from '../components/ReassuranceCard';
 
-interface Props {
-  title: string;
-  body?: string;
-  image?: any;
-  actions?: { id: string; label: string; kind?: 'primary' | 'secondary' }[];
-  onNext: () => void;
-  onActionPress?: (id: string) => void;
-}
+export default function QuestionsScreen() {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState<QuestionnaireAnswers>({});
+  const [selectedPeriodDates, setSelectedPeriodDates] = useState<string[]>([]);
+  
+  const setProfile = useCycleStore(state => state.setProfile);
+  const setPreferences = useCycleStore(state => state.setPreferences);
+  
+  const questions = getQuestions();
+  const currentQuestion = questions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
-export default function InfoCard({ title, body, image, actions, onNext, onActionPress }: Props) {
-  return (
-    <View style={styles.container}>
-      {image && <Image source={image} style={styles.image} resizeMode="contain" />}
+  const handleAnswer = (questionId: string, answer: any) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
+  };
+
+  const handleNext = () => {
+    if (isLastQuestion) {
+      // Save all answers and navigate to next screen
+      setProfile({ questionnaireAnswers: answers });
       
-      <Text style={styles.title}>{title}</Text>
+      // Save period dates if any were selected
+      if (selectedPeriodDates.length > 0) {
+        const sortedDates = [...selectedPeriodDates].sort();
+        const lastMenstrualPeriod = sortedDates[sortedDates.length - 1]; // Most recent date
+        
+        setPreferences({ lastMenstrualPeriod });
+        // Note: periodLogs will be set by the store when it processes the LMP
+      }
       
-      {body && <Text style={styles.body}>{body}</Text>}
+      router.push('/onboarding/health-notifications');
+    } else {
+      setCurrentQuestionIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePeriodDatesChange = (dates: string[]) => {
+    setSelectedPeriodDates(dates);
+    // Also save to answers for consistency
+    handleAnswer(currentQuestion.id, dates);
+  };
+
+  const handleSkipPeriodDates = () => {
+    // Skip period date selection and go to next question
+    setSelectedPeriodDates([]);
+    handleAnswer(currentQuestion.id, []);
+    handleNext();
+  };
+
+  const renderQuestion = () => {
+    if (!currentQuestion) return null;
+
+    // Handle period dates question specially
+    if (currentQuestion.type === 'period_dates') {
+      return (
+        <PeriodDateSelector
+          selectedDates={selectedPeriodDates}
+          onDatesChange={handlePeriodDatesChange}
+          onSkip={handleSkipPeriodDates}
+        />
+      );
+    }
+
+    // Handle number picker questions
+    if (currentQuestion.type === 'number_picker') {
+      const currentValue = answers[currentQuestion.id] || currentQuestion.defaultValue || 28;
       
-      {actions && actions.length > 0 && (
-        <View style={styles.actionsContainer}>
-          {actions.map((action) => (
-          <TouchableOpacity
-            key={action.id}
-            onPress={() => {
-              if (onActionPress) {
-                onActionPress(action.id);
-              }
-            }}
-            style={[
-              styles.actionButton,
-              action.kind === 'secondary' ? styles.secondaryButton : styles.primaryButton
-            ]}
-          >
-              <Text style={[
-                styles.actionText,
-                action.kind === 'secondary' ? styles.secondaryText : styles.primaryText
-              ]}>
-                {action.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      return (
+        <View style={styles.questionContainer}>
+          <InfoCard
+            title={currentQuestion.title}
+            body={currentQuestion.body}
+            onNext={handleNext}
+          />
+          
+          <View style={styles.pickerContainer}>
+            <WheelNumberPicker
+              value={currentValue}
+              onChange={(value) => handleAnswer(currentQuestion.id, value)}
+              min={currentQuestion.min || 1}
+              max={currentQuestion.max || 100}
+              step={currentQuestion.step || 1}
+              unit={currentQuestion.unit || 'days'}
+            />
+          </View>
+          
+          {currentQuestion.reassurance && (
+            <ReassuranceCard
+              title={currentQuestion.reassurance.title}
+              content={currentQuestion.reassurance.content}
+            />
+          )}
         </View>
-      )}
-      
-      <TouchableOpacity onPress={onNext} style={[styles.nextButton]}>
-        <Text style={styles.nextButtonText}>Next</Text>
-      </TouchableOpacity>
-    </View>
+      );
+    }
+
+    // Handle regular multiple choice questions
+    return (
+      <View style={styles.questionContainer}>
+        <InfoCard
+          title={currentQuestion.title}
+          body={currentQuestion.body}
+          actions={currentQuestion.options?.map(option => ({
+            id: option.id,
+            label: option.label,
+            kind: option.kind || 'secondary'
+          }))}
+          onNext={handleNext}
+          onActionPress={(optionId) => handleAnswer(currentQuestion.id, optionId)}
+        />
+        
+        {currentQuestion.reassurance && (
+          <ReassuranceCard
+            title={currentQuestion.reassurance.title}
+            content={currentQuestion.reassurance.content}
+          />
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight }]}>
+      <View style={styles.header}>
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill, 
+                { width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }
+              ]} 
+            />
+          </View>
+          <Text style={styles.progressText}>
+            {currentQuestionIndex + 1} of {questions.length}
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {renderQuestion()}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.white,
-    borderRadius: radii.card,
-    padding: spacing(3),
-    marginBottom: spacing(2),
-    alignItems: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    flex: 1,
+    backgroundColor: colors.bg,
   },
-  image: {
+  header: {
+    paddingHorizontal: spacing(3),
+    paddingTop: spacing(2),
+    paddingBottom: spacing(1),
+  },
+  progressContainer: {
+    alignItems: 'center',
+  },
+  progressBar: {
     width: '100%',
-    height: 160,
-    marginBottom: spacing(2),
-  },
-  title: {
-    ...typography.h3,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing(1),
-    lineHeight: 28,
-  },
-  body: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: spacing(2),
-  },
-  actionsContainer: {
-    width: '100%',
-    marginBottom: spacing(2),
-  },
-  actionButton: {
-    width: '100%',
-    paddingVertical: spacing(1.5),
-    paddingHorizontal: spacing(2),
-    borderRadius: radii.medium,
-    alignItems: 'center',
-    marginBottom: spacing(1),
-  },
-  primaryButton: {
-    backgroundColor: colors.primary + '20',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  secondaryButton: {
-    backgroundColor: colors.gray100,
-    borderWidth: 1,
-    borderColor: colors.gray300,
-  },
-  actionText: {
-    ...typography.caption,
-    fontWeight: '600',
-  },
-  primaryText: {
-    color: colors.primary,
-  },
-  secondaryText: {
-    color: colors.text,
-  },
-  nextButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.medium,
-    paddingVertical: spacing(1.5),
-    paddingHorizontal: spacing(4),
-    width: '100%',
-    alignItems: 'center',
-  },
-  nextButtonText: {
-    ...typography.body,
-    color: colors.white,
-    fontWeight: '600',
-  },
-  smallTitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing(1),
-  },
-  cycleIllustration: {
-    width: '100%',
-    height: 200,
-    marginBottom: spacing(3),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cycleChart: {
-    width: 280,
-    height: 160,
-    position: 'relative',
-    backgroundColor: colors.gray100,
-    borderRadius: radii.card,
-    overflow: 'hidden',
-  },
-  hormoneCurve: {
-    position: 'absolute',
-    top: '30%',
-    left: '10%',
-    right: '10%',
-    height: 3,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    transform: [{ scaleY: 2 }],
-  },
-  phaseIndicator: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  phaseEmoji: {
-    fontSize: 18,
-  },
-  phaseLabels: {
-    position: 'absolute',
-    bottom: spacing(2),
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: spacing(2),
-  },
-  phaseLabel: {
-    alignItems: 'center',
-  },
-  phaseDot: {
-    width: 20,
     height: 4,
+    backgroundColor: colors.gray300,
     borderRadius: 2,
-    marginBottom: spacing(0.5),
+    marginBottom: spacing(1),
   },
-  phaseIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.white,
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  progressText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing(3),
+  },
+  questionContainer: {
+    paddingVertical: spacing(2),
+  },
+  pickerContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  phaseIconText: {
-    fontSize: 12,
+    marginVertical: spacing(3),
   },
 });
