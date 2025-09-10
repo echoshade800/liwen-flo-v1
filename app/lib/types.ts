@@ -53,5 +53,9 @@ export interface NumberQuestion extends BaseQuestion {
   unit?: string;
 }
 
-export type Question = SingleQuestion | MultiQuestion | DateQuestion | NumberQuestion;
+export interface PeriodDatesQuestion extends BaseQuestion {
+  type: 'period_dates';
+}
+
+export type Question = SingleQuestion | MultiQuestion | DateQuestion | NumberQuestion | PeriodDatesQuestion;
 export type QuestionnaireItem = InfoItem | Question;

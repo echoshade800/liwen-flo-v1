@@ -225,5 +225,12 @@ export const QUESTIONNAIRE_DATA: QuestionnaireItem[] = [
     default: 6,
     min: 3,
     max: 10
+  },
+
+  {
+    id: 'q_period_dates',
+    type: 'period_dates',
+    title: 'Select your recent period dates',
+    subtitle: 'This helps us provide more accurate predictions'
   }
 ];
