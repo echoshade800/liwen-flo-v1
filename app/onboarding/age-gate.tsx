@@ -23,7 +23,8 @@ export default function AgeGateScreen() {
           'Age Restriction',
           'This app is for users 18 and older. If you are under 18, please use under parental or guardian guidance.',
           [
-            { text: 'Cancel', style: 'cancel' }
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Confirm', onPress: () => proceed() }
           ]
         );
       } else {
