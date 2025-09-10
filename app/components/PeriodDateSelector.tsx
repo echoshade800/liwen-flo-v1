@@ -231,11 +231,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     paddingVertical: spacing(2),
     borderWidth: 2,
-    borderColor: colors.fertileLight,
+    borderColor: colors.ovulation,
   },
   skipButtonText: {
     ...typography.body,
-    color: colors.fertileLight,
+    color: colors.ovulation,
     fontWeight: '500',
     marginLeft: spacing(1),
   },
