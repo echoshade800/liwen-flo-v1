@@ -9,12 +9,58 @@ interface Props {
   actions?: { id: string; label: string; kind?: 'primary' | 'secondary' }[];
   onNext: () => void;
   onActionPress?: (id: string) => void;
+  smallTitle?: string;
 }
 
-export default function InfoCard({ title, body, image, actions, onNext, onActionPress }: Props) {
+export default function InfoCard({ title, body, image, actions, onNext, onActionPress, smallTitle }: Props) {
   return (
     <View style={styles.container}>
+      {/* Cycle phases illustration */}
+      {title.includes('four phases') && (
+        <View style={styles.cycleIllustration}>
+          <View style={styles.cycleChart}>
+            {/* Hormone curve */}
+            <View style={styles.hormoneCurve} />
+            
+            {/* Phase indicators with emojis */}
+            <View style={[styles.phaseIndicator, { left: '15%', top: '20%' }]}>
+              <Text style={styles.phaseEmoji}>😔</Text>
+            </View>
+            <View style={[styles.phaseIndicator, { left: '75%', top: '15%' }]}>
+              <Text style={styles.phaseEmoji}>😠</Text>
+            </View>
+            <View style={[styles.phaseIndicator, { left: '25%', top: '65%' }]}>
+              <Text style={styles.phaseEmoji}>😕</Text>
+            </View>
+            <View style={[styles.phaseIndicator, { left: '65%', top: '60%' }]}>
+              <Text style={styles.phaseEmoji}>😊</Text>
+            </View>
+            
+            {/* Phase labels */}
+            <View style={styles.phaseLabels}>
+              <View style={styles.phaseLabel}>
+                <View style={[styles.phaseDot, { backgroundColor: colors.period }]} />
+                <View style={styles.phaseIcon}>
+                  <Text style={styles.phaseIconText}>🩸</Text>
+                </View>
+              </View>
+              <View style={styles.phaseLabel}>
+                <View style={[styles.phaseDot, { backgroundColor: colors.fertileLight }]} />
+                <View style={styles.phaseIcon}>
+                  <Text style={styles.phaseIconText}>🔵</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+      
       {image && <Image source={image} style={styles.image} resizeMode="contain" />}
+      
+      {/* Small title for cycle phases info */}
+      {smallTitle && (
+        <Text style={styles.smallTitle}>{smallTitle}</Text>
+      )}
       
       <Text style={styles.title}>{title}</Text>
       
@@ -23,18 +69,18 @@ export default function InfoCard({ title, body, image, actions, onNext, onAction
       {actions && actions.length > 0 && (
         <View style={styles.actionsContainer}>
           {actions.map((action) => (
-          <TouchableOpacity
-            key={action.id}
-            onPress={() => {
-              if (onActionPress) {
-                onActionPress(action.id);
-              }
-            }}
-            style={[
-              styles.actionButton,
-              action.kind === 'secondary' ? styles.secondaryButton : styles.primaryButton
-            ]}
-          >
+            <TouchableOpacity
+              key={action.id}
+              onPress={() => {
+                if (onActionPress) {
+                  onActionPress(action.id);
+                }
+              }}
+              style={[
+                styles.actionButton,
+                action.kind === 'secondary' ? styles.secondaryButton : styles.primaryButton
+              ]}
+            >
               <Text style={[
                 styles.actionText,
                 action.kind === 'secondary' ? styles.secondaryText : styles.primaryText
@@ -213,4 +259,3 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
-      
