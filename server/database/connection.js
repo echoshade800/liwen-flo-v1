@@ -6,7 +6,7 @@ const dbConfig = {
   port: 3306,
   user: "miniapp1",
   password: "miniapp@20251",
-  database: "flo",
+  database: "period",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

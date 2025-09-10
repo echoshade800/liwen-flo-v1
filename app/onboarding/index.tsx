@@ -113,7 +113,7 @@ export default function PermissionsAndTermsScreen() {
   return (
     <SafeAreaView style={[styles.container, Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight }]}>
       <View style={styles.content}>
-        <Text style={styles.title}>Welcome to Flo</Text>
+        <Text style={styles.title}>Welcome to Period</Text>
         <Text style={styles.subtitle}>Your personal period companion</Text>
         
         <View style={styles.textContainer}>
