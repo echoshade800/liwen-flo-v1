@@ -19,47 +19,85 @@ export default function PeriodDateSelector({
   onNext 
 }: PeriodDateSelectorProps) {
   const [currentMonth, setCurrentMonth] = useState(dayjs().format('YYYY-MM-DD'));
-  const [localSelectedDates, setLocalSelectedDates] = useState<string[]>([]);
   
-  // 初始化本地状态
-  useEffect(() => {
-    console.log('[PeriodDateSelector] 初始化，接收到的selectedDates:', selectedDates);
-    setLocalSelectedDates([...selectedDates]);
-  }, []);
-
+  const hasSelectedDates = selectedDates.length > 0;
   const today = dayjs().format('YYYY-MM-DD');
 
   const handleDayPress = (day: any) => {
     const dateString = day.dateString;
-    console.log('[PeriodDateSelector] 用户点击日期:', dateString);
+    console.log('=== PeriodDateSelector handleDayPress ===');
+    console.log('用户点击日期:', dateString);
+    console.log('当前已选日期:', selectedDates);
     
-    // 防止选择未来日期
+    
+    // Prevent selecting future dates
     if (dayjs(dateString).isAfter(dayjs(), 'day')) {
-      console.log('[PeriodDateSelector] 忽略未来日期');
+      console.log('忽略未来日期:', dateString);
       return;
     }
 
-    let newDates: string[];
-    if (localSelectedDates.includes(dateString)) {
-      // 取消选择
-      newDates = localSelectedDates.filter(date => date !== dateString);
-      console.log('[PeriodDateSelector] 取消选择，新数组:', newDates);
+    const selectedDate = dayjs(dateString);
+    
+    // Check if this date is already selected
+    if (selectedDates.includes(dateString)) {
+      // If clicking on an already selected date, remove it
+      const newDates = selectedDates.filter(date => date !== dateString);
+      console.log('取消选择日期，更新后:', newDates);
+      onDatesChange(newDates);
+      return;
+    }
+
+    // Check if this should be a new period (10+ days before earliest existing date)
+    let shouldCreateNewPeriod = false;
+    if (selectedDates.length > 0) {
+      const earliestSelected = dayjs(Math.min(...selectedDates.map(d => dayjs(d).valueOf())));
+      const daysDifference = earliestSelected.diff(selectedDate, 'day');
+      shouldCreateNewPeriod = daysDifference >= 10;
+    }
+
+    if (shouldCreateNewPeriod) {
+      // Create new period: auto-select this date + next 4 days
+      const newPeriodDates = [];
+      for (let i = 0; i < 5; i++) {
+        const periodDate = selectedDate.add(i, 'day');
+        if (!periodDate.isAfter(dayjs(), 'day')) {
+          const formattedDate = periodDate.format('YYYY-MM-DD');
+          newPeriodDates.push(formattedDate);
+          console.log('New period auto-selecting date:', formattedDate);
+        }
+      }
+      const combinedDates = [...selectedDates, ...newPeriodDates].sort();
+      console.log('新经期组合日期:', combinedDates);
+      onDatesChange(combinedDates);
     } else {
-      // 添加选择
-      newDates = [...localSelectedDates, dateString].sort();
-      console.log('[PeriodDateSelector] 添加选择，新数组:', newDates);
+      // First selection or extending existing period
+      if (selectedDates.length === 0) {
+        // First selection: auto-select this date + next 4 days
+        const initialDates = [];
+        for (let i = 0; i < 5; i++) {
+          const periodDate = selectedDate.add(i, 'day');
+          if (!periodDate.isAfter(dayjs(), 'day')) {
+            initialDates.push(periodDate.format('YYYY-MM-DD'));
+          }
+        }
+        console.log('首次选择自动填充日期:', initialDates);
+        onDatesChange(initialDates);
+      } else {
+        // Add single date to existing selection
+        const newDates = [...selectedDates, dateString].sort();
+        console.log('添加单个日期，更新后:', newDates);
+        onDatesChange(newDates);
+      }
     }
     
-    setLocalSelectedDates(newDates);
-    onDatesChange(newDates);
-    console.log('[PeriodDateSelector] 已调用onDatesChange，传递数据:', newDates);
+    console.log('=== PeriodDateSelector 日期选择完成 ===');
   };
 
   const getMarkedDates = () => {
     const marked: Record<string, any> = {};
     
-    // 标记选中的日期
-    localSelectedDates.forEach(dateString => {
+    // Mark selected period dates
+    selectedDates.forEach(dateString => {
       if (!dayjs(dateString).isAfter(dayjs(), 'day')) {
         marked[dateString] = {
           customStyles: {
@@ -69,15 +107,14 @@ export default function PeriodDateSelector({
             },
             text: {
               color: colors.white,
-              fontWeight: '600',
             }
           }
         };
       }
     });
 
-    // 标记今天
-    if (!localSelectedDates.includes(today)) {
+    // Mark today with border if not selected
+    if (!selectedDates.includes(today)) {
       marked[today] = {
         customStyles: {
           container: {
@@ -101,10 +138,10 @@ export default function PeriodDateSelector({
     <SafeAreaView style={[styles.container, Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight }]}>
       <View style={styles.header}>
         <Text style={styles.title}>
-          Select your period dates
-        </Text>
-        <Text style={styles.subtitle}>
-          Tap any dates when you had your period
+          {hasSelectedDates 
+            ? "Dates are auto-filled. Tap to modify." 
+            : "Tap the start date of your last period."
+          }
         </Text>
       </View>
 
@@ -138,13 +175,12 @@ export default function PeriodDateSelector({
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.selectedCount}>
-          {localSelectedDates.length} dates selected
-        </Text>
-        
-        <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
-          <Text style={styles.skipButtonText}>I don't remember</Text>
-        </TouchableOpacity>
+        {!hasSelectedDates && (
+          <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
+            <Ionicons name="help-circle-outline" size={20} color={colors.fertileLight} />
+            <Text style={styles.skipButtonText}>I don't remember</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -165,14 +201,8 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.white,
     textAlign: 'center',
-    fontWeight: '600',
-    marginBottom: spacing(1),
-  },
-  subtitle: {
-    ...typography.caption,
-    color: colors.white,
-    textAlign: 'center',
-    opacity: 0.9,
+    fontWeight: '500',
+    lineHeight: 22,
   },
   calendarContainer: {
     flex: 1,
@@ -190,25 +220,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(3),
     paddingVertical: spacing(3),
     backgroundColor: colors.white,
-    alignItems: 'center',
   },
-  selectedCount: {
-    ...typography.caption,
-    color: colors.text,
-    marginBottom: spacing(2),
+  nextButton: {
+    backgroundColor: colors.fertileLight,
+    borderRadius: radii.card,
+    paddingVertical: spacing(2),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nextButtonText: {
+    ...typography.body,
+    color: colors.white,
     fontWeight: '600',
   },
   skipButton: {
-    backgroundColor: colors.gray100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
     borderRadius: radii.card,
     paddingVertical: spacing(2),
-    paddingHorizontal: spacing(4),
-    borderWidth: 1,
-    borderColor: colors.gray300,
+    borderWidth: 2,
+    borderColor: colors.ovulation,
   },
   skipButtonText: {
     ...typography.body,
-    color: colors.text,
+    color: colors.ovulation,
     fontWeight: '500',
+    marginLeft: spacing(1),
   },
 });

@@ -24,26 +24,24 @@ const interpolate = (text?: string, vars: Record<string, string> = {}) => {
 };
 
 export default function QuestionCard({ question, answer, onAnswer, onNext }: QuestionCardProps) {
-  const [localPeriodDates, setLocalPeriodDates] = useState<string[]>([]);
+  const [selectedPeriodDates, setSelectedPeriodDates] = useState<string[]>([]);
 
-  // 初始化经期日期
+  // Initialize period dates from answer
   useEffect(() => {
-    if (question.type === 'period_dates') {
-      const dates = Array.isArray(answer) ? answer : [];
-      console.log('[QuestionCard] 初始化经期日期选择器，当前答案:', dates);
-      setLocalPeriodDates(dates);
+    if (question.type === 'period_dates' && Array.isArray(answer)) {
+      setSelectedPeriodDates(answer);
     }
   }, [question.type, answer]);
 
   const handlePeriodDatesChange = (dates: string[]) => {
-    console.log('[QuestionCard] 接收到日期变更:', dates);
-    setLocalPeriodDates(dates);
+    console.log('=== QuestionCard handlePeriodDatesChange ===');
+    console.log('从 PeriodDateSelector 接收到的日期:', dates);
+    setSelectedPeriodDates(dates);
     onAnswer(dates);
-    console.log('[QuestionCard] 已调用onAnswer传递给Questions页面');
+    console.log('已调用 onAnswer，传递给 Questions 页面');
   };
 
   const handleSkipPeriodDates = () => {
-    console.log('[QuestionCard] 用户跳过经期日期选择');
     onAnswer([]);
     if (onNext) {
       onNext();
@@ -364,7 +362,7 @@ export default function QuestionCard({ question, answer, onAnswer, onNext }: Que
       case 'period_dates':
         return (
           <PeriodDateSelector
-            selectedDates={localPeriodDates}
+            selectedDates={selectedPeriodDates}
             onDatesChange={handlePeriodDatesChange}
             onSkip={handleSkipPeriodDates}
             onNext={() => {
