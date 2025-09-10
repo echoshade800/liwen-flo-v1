@@ -151,6 +151,7 @@ export default function MonthCalendar({
           const isToday = dateString === today;
           const isSelected = dateString === selectedDate;
           const markedData = processedMarkedDates[dateString || ''];
+         const isFutureDate = dayjs(dateString).isAfter(dayjs(), 'day');
           
           // 获取日期的样式
           const containerStyle = markedData?.customStyles?.container || {};
@@ -172,12 +173,12 @@ export default function MonthCalendar({
           return (
             <TouchableOpacity
               style={[styles.dayContainer, finalContainerStyle]}
-              onPress={() => onDaySelect(dateString || '')}
-              disabled={state === 'disabled'}
+             onPress={() => !isFutureDate && onDaySelect(dateString || '')}
+             disabled={state === 'disabled' || isFutureDate}
             >
               <Text style={[
                 styles.dayText,
-                state === 'disabled' && styles.disabledText,
+               (state === 'disabled' || isFutureDate) && styles.disabledText,
                 finalTextStyle
               ]}>
                 {date?.day}
