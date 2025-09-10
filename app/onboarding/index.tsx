@@ -115,8 +115,7 @@ export default function PermissionsAndTermsScreen() {
   };
 
   const handleTermsOfUse = () => {
-    // TODO: Add Terms of Use page
-    console.log('Terms of Use clicked');
+    router.push('/onboarding/terms-of-use');
   };
   return (
     <SafeAreaView style={[styles.container, Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight }]}>
