@@ -16,7 +16,6 @@ export default function InfoCard({ title, body, image, actions, onNext, onAction
     <View style={styles.container}>
       {image && <Image source={image} style={styles.image} resizeMode="contain" />}
       
-      {smallTitle && <Text style={styles.smallTitle}>{smallTitle}</Text>}
       <Text style={styles.title}>{title}</Text>
       
       {body && <Text style={styles.body}>{body}</Text>}
