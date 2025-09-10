@@ -281,14 +281,14 @@ const styles = StyleSheet.create({
     color: colors.gray300,
   },
   todayLabel: {
-    fontSize: 8,
-    color: colors.primary,
+    fontSize: 7,
+    color: colors.black,
     fontWeight: '600',
     position: 'absolute',
-    bottom: -2,
+    top: 2,
     textAlign: 'center',
   },
   todayLabelSelected: {
-    color: colors.white,
+    color: colors.black,
   },
 });
