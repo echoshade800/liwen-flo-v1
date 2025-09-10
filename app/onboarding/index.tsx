@@ -134,8 +134,8 @@ export default function PermissionsAndTermsScreen() {
 
         <Text style={styles.terms}>
           By continuing, you agree to our{' '}
-          <Text style={styles.link}>Terms of Service</Text> and{' '}
-          <Text style={styles.link}>Privacy Policy</Text>
+          <Text style={styles.link}>Privacy Policy</Text> and{' '}
+          <Text style={styles.link}>Terms of Use</Text>
         </Text>
         
         <TouchableOpacity 
