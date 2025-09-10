@@ -9,58 +9,12 @@ interface Props {
   actions?: { id: string; label: string; kind?: 'primary' | 'secondary' }[];
   onNext: () => void;
   onActionPress?: (id: string) => void;
-  smallTitle?: string;
 }
 
-export default function InfoCard({ title, body, image, actions, onNext, onActionPress, smallTitle }: Props) {
+export default function InfoCard({ title, body, image, actions, onNext, onActionPress }: Props) {
   return (
     <View style={styles.container}>
-      {/* Cycle phases illustration */}
-      {title.includes('four phases') && (
-        <View style={styles.cycleIllustration}>
-          <View style={styles.cycleChart}>
-            {/* Hormone curve */}
-            <View style={styles.hormoneCurve} />
-            
-            {/* Phase indicators with emojis */}
-            <View style={[styles.phaseIndicator, { left: '15%', top: '20%' }]}>
-              <Text style={styles.phaseEmoji}>😔</Text>
-            </View>
-            <View style={[styles.phaseIndicator, { left: '75%', top: '15%' }]}>
-              <Text style={styles.phaseEmoji}>😠</Text>
-            </View>
-            <View style={[styles.phaseIndicator, { left: '25%', top: '65%' }]}>
-              <Text style={styles.phaseEmoji}>😕</Text>
-            </View>
-            <View style={[styles.phaseIndicator, { left: '65%', top: '60%' }]}>
-              <Text style={styles.phaseEmoji}>😊</Text>
-            </View>
-            
-            {/* Phase labels */}
-            <View style={styles.phaseLabels}>
-              <View style={styles.phaseLabel}>
-                <View style={[styles.phaseDot, { backgroundColor: colors.period }]} />
-                <View style={styles.phaseIcon}>
-                  <Text style={styles.phaseIconText}>🩸</Text>
-                </View>
-              </View>
-              <View style={styles.phaseLabel}>
-                <View style={[styles.phaseDot, { backgroundColor: colors.fertileLight }]} />
-                <View style={styles.phaseIcon}>
-                  <Text style={styles.phaseIconText}>🔵</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
-      
       {image && <Image source={image} style={styles.image} resizeMode="contain" />}
-      
-      {/* Small title for cycle phases info */}
-      {smallTitle && (
-        <Text style={styles.smallTitle}>{smallTitle}</Text>
-      )}
       
       <Text style={styles.title}>{title}</Text>
       
@@ -69,18 +23,18 @@ export default function InfoCard({ title, body, image, actions, onNext, onAction
       {actions && actions.length > 0 && (
         <View style={styles.actionsContainer}>
           {actions.map((action) => (
-            <TouchableOpacity
-              key={action.id}
-              onPress={() => {
-                if (onActionPress) {
-                  onActionPress(action.id);
-                }
-              }}
-              style={[
-                styles.actionButton,
-                action.kind === 'secondary' ? styles.secondaryButton : styles.primaryButton
-              ]}
-            >
+          <TouchableOpacity
+            key={action.id}
+            onPress={() => {
+              if (onActionPress) {
+                onActionPress(action.id);
+              }
+            }}
+            style={[
+              styles.actionButton,
+              action.kind === 'secondary' ? styles.secondaryButton : styles.primaryButton
+            ]}
+          >
               <Text style={[
                 styles.actionText,
                 action.kind === 'secondary' ? styles.secondaryText : styles.primaryText
@@ -175,87 +129,5 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.white,
     fontWeight: '600',
-  },
-  smallTitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing(1),
-  },
-  cycleIllustration: {
-    width: '100%',
-    height: 200,
-    marginBottom: spacing(3),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cycleChart: {
-    width: 280,
-    height: 160,
-    position: 'relative',
-    backgroundColor: colors.gray100,
-    borderRadius: radii.card,
-    overflow: 'hidden',
-  },
-  hormoneCurve: {
-    position: 'absolute',
-    top: '30%',
-    left: '10%',
-    right: '10%',
-    height: 3,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    transform: [{ scaleY: 2 }],
-  },
-  phaseIndicator: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  phaseEmoji: {
-    fontSize: 18,
-  },
-  phaseLabels: {
-    position: 'absolute',
-    bottom: spacing(2),
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: spacing(2),
-  },
-  phaseLabel: {
-    alignItems: 'center',
-  },
-  phaseDot: {
-    width: 20,
-    height: 4,
-    borderRadius: 2,
-    marginBottom: spacing(0.5),
-  },
-  phaseIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  phaseIconText: {
-    fontSize: 12,
   },
 });
