@@ -14,7 +14,52 @@ interface Props {
 export default function InfoCard({ title, body, image, actions, onNext, onActionPress }: Props) {
   return (
     <View style={styles.container}>
+      {/* Cycle phases illustration */}
+      {title.includes('four phases') && (
+        <View style={styles.cycleIllustration}>
+          <View style={styles.cycleChart}>
+            {/* Hormone curve */}
+            <View style={styles.hormoneCurve} />
+            
+            {/* Phase indicators with emojis */}
+            <View style={[styles.phaseIndicator, { left: '15%', top: '20%' }]}>
+              <Text style={styles.phaseEmoji}>😔</Text>
+            </View>
+            <View style={[styles.phaseIndicator, { left: '75%', top: '15%' }]}>
+              <Text style={styles.phaseEmoji}>😠</Text>
+            </View>
+            <View style={[styles.phaseIndicator, { left: '25%', top: '65%' }]}>
+              <Text style={styles.phaseEmoji}>😕</Text>
+            </View>
+            <View style={[styles.phaseIndicator, { left: '65%', top: '60%' }]}>
+              <Text style={styles.phaseEmoji}>😊</Text>
+            </View>
+            
+            {/* Phase labels */}
+            <View style={styles.phaseLabels}>
+              <View style={styles.phaseLabel}>
+                <View style={[styles.phaseDot, { backgroundColor: colors.period }]} />
+                <View style={styles.phaseIcon}>
+                  <Text style={styles.phaseIconText}>🩸</Text>
+                </View>
+              </View>
+              <View style={styles.phaseLabel}>
+                <View style={[styles.phaseDot, { backgroundColor: colors.fertileLight }]} />
+                <View style={styles.phaseIcon}>
+                  <Text style={styles.phaseIconText}>🔵</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+      
       {image && <Image source={image} style={styles.image} resizeMode="contain" />}
+      
+      {/* Small title for cycle phases info */}
+      {title.includes('four phases') && (
+        <Text style={styles.smallTitle}>Next, let's learn about your cycle.</Text>
+      )}
       
       <Text style={styles.title}>{title}</Text>
       

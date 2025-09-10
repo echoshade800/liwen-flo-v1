@@ -22,6 +22,16 @@ export const QUESTIONNAIRE_DATA: QuestionnaireItem[] = [
   },
 
   {
+    id: 'cycle_phases_info',
+    type: 'info',
+    title: 'Each of your cycles includes four phases: menstruation, follicular phase, ovulation, and luteal phase.',
+    body: 'Your hormone levels vary in each phase. Flo will use your period logs to assess hormonal changes and provide targeted guidance to help improve your quality of life.',
+    actions: [
+      { id: 'continue', label: 'Next', kind: 'primary' }
+    ]
+  },
+
+  {
     id: 'q_is_regular',
     type: 'single',
     title: 'Are your periods regular?',
