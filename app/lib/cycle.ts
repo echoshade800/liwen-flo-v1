@@ -2,6 +2,8 @@ import dayjs, { Dayjs } from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isBetween from 'dayjs/plugin/isBetween';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { PeriodEntry, Preferences } from '../store/useCycleStore';
 import { colors } from '../theme/tokens';
 
@@ -9,6 +11,33 @@ import { colors } from '../theme/tokens';
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isBetween);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+/**
+ * Timezone utility functions for global users
+ */
+export const timezoneUtils = {
+  // Convert UTC date string to local date string for display
+  utcToLocal: (utcDateString: string): string => {
+    return dayjs.utc(utcDateString).local().format('YYYY-MM-DD');
+  },
+  
+  // Convert local date string to UTC for storage
+  localToUTC: (localDateString: string): string => {
+    return dayjs(localDateString).utc().format('YYYY-MM-DD');
+  },
+  
+  // Get today in local timezone
+  getTodayLocal: (): string => {
+    return dayjs().local().format('YYYY-MM-DD');
+  },
+  
+  // Get today in UTC
+  getTodayUTC: (): string => {
+    return dayjs().utc().format('YYYY-MM-DD');
+  }
+};
 
 /**
  * 周期计算核心方法
@@ -272,16 +301,17 @@ export function getCalendarData(
 ) {
   console.log('=== getCalendarData 开始处理 ===');
   console.log('目标月份:', month);
-  console.log('接收到的 periodLogs:', {
+  console.log('接收到的 periodLogs (UTC):', {
     data: periodLogs,
     length: periodLogs.length,
     details: periodLogs.map((d, i) => `${i}: "${d}"`)
   });
   
-  const monthStart = dayjs(month).startOf('month');
+  // Use local timezone for month calculations
+  const monthStart = dayjs(month).local().startOf('month');
   const cycleInfo = calculateCurrentCycle(periods, preferences);
   const monthEnd = monthStart.endOf('month');
-  const today = dayjs();
+  const today = dayjs().local();
 
   const calendarData: Record<string, any> = {};
   
@@ -335,14 +365,16 @@ export function getCalendarData(
     return predictions;
   };
 
-  // 优先标记用户手动选择的经期日期
-  periodLogs.forEach(dateString => {
-    console.log('处理经期日期:', dateString);
+  // 优先标记用户手动选择的经期日期 (convert UTC to local for display)
+  periodLogs.forEach(utcDateString => {
+    console.log('处理经期UTC日期:', utcDateString);
     try {
-      // 解析日期并确保格式正确
-      const date = dayjs(dateString);
+      // Convert UTC to local timezone for display
+      const localDateString = timezoneUtils.utcToLocal(utcDateString);
+      const date = dayjs(localDateString);
       console.log('解析结果:', {
-        original: dateString,
+        originalUTC: utcDateString,
+        localDate: localDateString,
         parsed: date.format('YYYY-MM-DD'),
         isValid: date.isValid(),
         inCurrentMonth: date.isBetween(monthStart, monthEnd, 'day', '[]')
@@ -353,7 +385,7 @@ export function getCalendarData(
         const formattedDate = date.format('YYYY-MM-DD');
         
         if (date.isBetween(monthStart, monthEnd, 'day', '[]')) {
-          console.log('✅ 日期在当前月份，标记为经期:', formattedDate);
+          console.log('✅ 本地日期在当前月份，标记为经期:', formattedDate);
           calendarData[formattedDate] = {
             selectedColor: colors.period,
             type: 'user_period',
@@ -369,13 +401,13 @@ export function getCalendarData(
             }
           };
         } else {
-          console.log('⏭️ 日期不在当前月份范围:', formattedDate);
+          console.log('⏭️ 本地日期不在当前月份范围:', formattedDate);
         }
       } else {
-        console.warn(`无效日期: ${dateString}`);
+        console.warn(`无效UTC日期: ${utcDateString}`);
       }
     } catch (error) {
-      console.error(`处理日期 ${dateString} 时出错:`, error);
+      console.error(`处理UTC日期 ${utcDateString} 时出错:`, error);
     }
   });
 
@@ -383,17 +415,20 @@ export function getCalendarData(
   let referenceDate: dayjs.Dayjs | null = null;
   
   if (preferences.lastMenstrualPeriod) {
-    referenceDate = dayjs(preferences.lastMenstrualPeriod);
+    // Convert LMP from UTC to local for calculations
+    referenceDate = dayjs.utc(preferences.lastMenstrualPeriod).local();
   } else if (periods.length > 0) {
-    referenceDate = dayjs(periods[periods.length - 1].startDate);
+    // Convert period start date from UTC to local
+    referenceDate = dayjs.utc(periods[periods.length - 1].startDate).local();
   } else if (periodLogs.length > 0) {
     // 如果没有LMP，使用最近的用户记录日期
-    const sortedLogs = [...periodLogs].sort();
-    referenceDate = dayjs(sortedLogs[sortedLogs.length - 1]);
+    const sortedUTCLogs = [...periodLogs].sort();
+    const latestUTCDate = sortedUTCLogs[sortedUTCLogs.length - 1];
+    referenceDate = dayjs.utc(latestUTCDate).local();
   }
 
   if (referenceDate) {
-    console.log('基于参考日期生成预测:', referenceDate.format('YYYY-MM-DD'));
+    console.log('基于本地参考日期生成预测:', referenceDate.format('YYYY-MM-DD'));
     
     const predictions = generateCompleteFuturePredictions(
       referenceDate, 
@@ -492,8 +527,9 @@ export function getCalendarData(
 
   // 标记已记录的经期
   periods.forEach(period => {
-    const start = dayjs(period.startDate);
-    const end = period.endDate ? dayjs(period.endDate) : start.add(preferences.avgPeriod, 'day');
+    // Convert period dates from UTC to local
+    const start = dayjs.utc(period.startDate).local();
+    const end = period.endDate ? dayjs.utc(period.endDate).local() : start.add(preferences.avgPeriod, 'day');
     
     let current = start;
     while (current.isSameOrBefore(end) && current.isBefore(monthEnd.add(1, 'day'))) {
@@ -536,11 +572,13 @@ export function getCalendarData(
 export function calculatePeriodDay(periodLogs: string[], selectedDate: string): number | null {
   if (periodLogs.length === 0) return null;
   
-  const today = dayjs();
-  const selected = dayjs(selectedDate);
+  // Convert UTC period logs to local for calculation
+  const localPeriodLogs = periodLogs.map(utcDate => timezoneUtils.utcToLocal(utcDate));
+  const today = dayjs().local();
+  const selected = dayjs(selectedDate); // selectedDate is already in local timezone
   
   // 按日期排序
-  const sortedLogs = [...periodLogs].sort();
+  const sortedLogs = [...localPeriodLogs].sort();
   
   // 找到包含选中日期的经期组
   const periodGroups = groupConsecutiveDates(sortedLogs);
@@ -606,15 +644,16 @@ export function getCurrentPeriodInfo(periodLogs: string[], selectedDate: string)
 export function getNextPeriodPrediction(preferences: Preferences) {
   if (!preferences.lastMenstrualPeriod) return null;
   
-  const lmpStart = dayjs(preferences.lastMenstrualPeriod);
+  // Convert LMP from UTC to local for calculation
+  const lmpStart = dayjs.utc(preferences.lastMenstrualPeriod).local();
   const nextPeriodStart = lmpStart.add(preferences.avgCycle, 'day');
   const nextPeriodEnd = nextPeriodStart.add(preferences.avgPeriod - 1, 'day');
   
   return {
     startDate: nextPeriodStart.format('YYYY-MM-DD'),
     endDate: nextPeriodEnd.format('YYYY-MM-DD'),
-    daysFromNow: nextPeriodStart.diff(dayjs(), 'day'),
-    isOverdue: nextPeriodStart.isBefore(dayjs()),
+    daysFromNow: nextPeriodStart.diff(dayjs().local(), 'day'),
+    isOverdue: nextPeriodStart.isBefore(dayjs().local()),
   };
 }
 
@@ -660,6 +699,7 @@ function calculateSingleCycleStatus(cycleLength: number, periodLength: number): 
 /**
  * 根据用户选择的经期日期，推导最近一次月经的起始日（LMP）
  * 逻辑：对 periodLogs 进行排序并分组连续日期，取最后一组的第一天作为 LMP
+ * 注意：periodLogs 存储的是 UTC 时间，需要转换为本地时间进行计算
  */
 export function findLastPeriodStart(periodLogs: string[]): string | null {
   console.log('findLastPeriodStart periodLogs', periodLogs);
@@ -668,7 +708,10 @@ export function findLastPeriodStart(periodLogs: string[]): string | null {
   }
 
   try {
-    const uniqueSorted = Array.from(new Set(periodLogs)).sort();
+    // Convert UTC dates to local for processing
+    const localDates = periodLogs.map(utcDate => timezoneUtils.utcToLocal(utcDate));
+    const uniqueSorted = Array.from(new Set(localDates)).sort();
+    
     const groups = (function(dates: string[]) {
       if (dates.length === 0) return [] as string[][];
       const result: string[][] = [];
@@ -689,7 +732,10 @@ export function findLastPeriodStart(periodLogs: string[]): string | null {
 
     if (groups.length === 0) return null;
     const lastGroup = groups[groups.length - 1];
-    return lastGroup[0] || null;
+    const localLMP = lastGroup[0] || null;
+    
+    // Convert back to UTC for storage
+    return localLMP ? timezoneUtils.localToUTC(localLMP) : null;
   } catch (e) {
     console.warn('findLastPeriodStart failed:', e);
     return null;

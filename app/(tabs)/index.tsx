@@ -3,16 +3,23 @@ import { View, StyleSheet, SafeAreaView, Platform, StatusBar, TouchableOpacity, 
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { useCycleStore } from '../store/useCycleStore';
-import { getCalendarData, calculateCurrentCycle, getNextPeriodPrediction } from '../lib/cycle';
+import { getCalendarData, calculateCurrentCycle, getNextPeriodPrediction, timezoneUtils } from '../lib/cycle';
 import { notificationManager } from '../lib/notificationManager';
 import { colors, spacing, typography, radii } from '../theme/tokens';
 import MonthCalendar from '../components/MonthCalendar';
 import DayInfoCard from '../components/DayInfoCard';
 
+// Extend dayjs with timezone plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 export default function CalendarScreen() {
-  const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
-  const [currentMonth, setCurrentMonth] = useState(dayjs().format('YYYY-MM'));
+  // Use local timezone for UI state
+  const [selectedDate, setSelectedDate] = useState(dayjs().local().format('YYYY-MM-DD'));
+  const [currentMonth, setCurrentMonth] = useState(dayjs().local().format('YYYY-MM'));
   const [isLoading, setIsLoading] = useState(true);
   
   const periods = useCycleStore(state => state.periods);
@@ -46,7 +53,8 @@ export default function CalendarScreen() {
               loadedData = true;
               console.log(`第 ${attempts} 次尝试数据加载成功:`);
               console.log(`- 经期记录: ${currentState.periodLogs.length} 条`);
-              console.log(`- 经期日期: ${currentState.periodLogs}`);
+              console.log(`- 经期UTC日期: ${currentState.periodLogs}`);
+              console.log(`- 经期本地日期: ${currentState.periodLogs.map(d => timezoneUtils.utcToLocal(d))}`);
               console.log(`- 每日记录: ${currentState.dailyLogs.length} 条`);
             } else if (attempts < maxAttempts) {
               console.log(`第 ${attempts} 次尝试未加载到数据，重试中...`);
@@ -86,8 +94,9 @@ export default function CalendarScreen() {
       }
 
       // Check if user marked period as started (today is in periodLogs)
-      const today = dayjs().format('YYYY-MM-DD');
-      const hasMarkedTodayAsPeriod = periodLogs.includes(today);
+      const todayLocal = timezoneUtils.getTodayLocal();
+      const todayUTC = timezoneUtils.getTodayUTC();
+      const hasMarkedTodayAsPeriod = periodLogs.includes(todayUTC);
       
       if (hasMarkedTodayAsPeriod && reminderSettings.scheduledNotificationId) {
         console.log('User marked period as started, cancelling current cycle reminder');
@@ -119,7 +128,7 @@ export default function CalendarScreen() {
         const newNotificationId = await notificationManager.schedulePeriodReminder(currentNextPeriod.startDate);
         
         if (newNotificationId) {
-          const notificationTime = dayjs(currentNextPeriod.startDate).hour(9).minute(0).second(0);
+          const notificationTime = dayjs(currentNextPeriod.startDate).local().hour(9).minute(0).second(0);
           
           setPreferences({
             reminders: {
@@ -140,10 +149,14 @@ export default function CalendarScreen() {
   
   console.log('=== Calendar Screen 主页渲染 ===');
   console.log('当前显示月份:', currentMonth);
-  console.log('Store 中的经期数据:', {
+  console.log('Store 中的经期UTC数据:', {
     periodLogs: periodLogs,
     length: periodLogs.length,
     preferences_LMP: preferences.lastMenstrualPeriod
+  });
+  console.log('转换为本地时间的经期数据:', {
+    localPeriodLogs: periodLogs.map(d => timezoneUtils.utcToLocal(d)),
+    length: periodLogs.length
   });
   console.log('生成的日历标记:', {
     markedDates: Object.keys(markedDates),
@@ -157,7 +170,8 @@ export default function CalendarScreen() {
   const selectedLog = dailyLogs.find(log => {
     try {
       // 解析日期并仅比较年月日部分
-      const logDate = dayjs(log.date);
+      // Daily logs are stored in local timezone, so compare directly
+      const logDate = dayjs(log.date).local();
       const targetDate = dayjs(selectedDate);
       const isSameDate = logDate.isSame(targetDate, 'day');
       
@@ -175,7 +189,8 @@ export default function CalendarScreen() {
   const getCycleDay = () => {
     if (!cycleInfo || !periods.length) return undefined;
     
-    const lastPeriodStart = dayjs(periods[periods.length - 1].startDate);
+    // Convert period start from UTC to local
+    const lastPeriodStart = dayjs.utc(periods[periods.length - 1].startDate).local();
     const selected = dayjs(selectedDate);
     
     if (selected.isSameOrAfter(lastPeriodStart)) {
@@ -188,7 +203,8 @@ export default function CalendarScreen() {
   const getLMPCycleDay = () => {
     if (!preferences.lastMenstrualPeriod) return undefined;
     
-    const lmpStart = dayjs(preferences.lastMenstrualPeriod);
+    // Convert LMP from UTC to local
+    const lmpStart = dayjs.utc(preferences.lastMenstrualPeriod).local();
     const selected = dayjs(selectedDate);
     
     if (selected.isSameOrAfter(lmpStart)) {
