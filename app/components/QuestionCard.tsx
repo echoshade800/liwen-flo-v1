@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import dayjs from 'dayjs';
@@ -8,6 +8,7 @@ import EmojiOption from './EmojiOption';
 import ReassuranceCard from './ReassuranceCard';
 import InfoCard from './InfoCard';
 import WheelNumberPicker from './WheelNumberPicker';
+import PeriodDateSelector from './PeriodDateSelector';
 
 interface QuestionCardProps {
   question: QuestionnaireItem;
@@ -23,6 +24,26 @@ const interpolate = (text?: string, vars: Record<string, string> = {}) => {
 };
 
 export default function QuestionCard({ question, answer, onAnswer, onNext }: QuestionCardProps) {
+  const [selectedPeriodDates, setSelectedPeriodDates] = useState<string[]>([]);
+
+  // Initialize period dates from answer
+  useEffect(() => {
+    if (question.type === 'period_dates' && Array.isArray(answer)) {
+      setSelectedPeriodDates(answer);
+    }
+  }, [question.type, answer]);
+
+  const handlePeriodDatesChange = (dates: string[]) => {
+    setSelectedPeriodDates(dates);
+    onAnswer(dates);
+  };
+
+  const handleSkipPeriodDates = () => {
+    onAnswer([]);
+    if (onNext) {
+      onNext();
+    }
+  };
 
   // 处理 info 类型
   if (question.type === 'info') {
@@ -335,6 +356,20 @@ export default function QuestionCard({ question, answer, onAnswer, onNext }: Que
           </View>
         );
 
+      case 'period_dates':
+        return (
+          <PeriodDateSelector
+            selectedDates={selectedPeriodDates}
+            onDatesChange={handlePeriodDatesChange}
+            onSkip={handleSkipPeriodDates}
+            onNext={() => {
+              if (onNext) {
+                onNext();
+              }
+            }}
+          />
+        );
+
       default:
         return null;
     }
@@ -342,11 +377,17 @@ export default function QuestionCard({ question, answer, onAnswer, onNext }: Que
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{question.title}</Text>
-      {question.subtitle && (
-        <Text style={styles.subtitle}>{question.subtitle}</Text>
+      {question.type === 'period_dates' ? (
+        renderContent()
+      ) : (
+        <>
+          <Text style={styles.title}>{question.title}</Text>
+          {question.subtitle && (
+            <Text style={styles.subtitle}>{question.subtitle}</Text>
+          )}
+          {renderContent()}
+        </>
       )}
-      {renderContent()}
     </View>
   );
 }

@@ -62,16 +62,30 @@ export default function OnboardingQuestionsScreen() {
   const saveAnswersAndComplete = () => {
     // Extract key data for preferences
     console.log('saveAnswersAndComplete answers', answers);
-    const lmp = answers.q_lmp;
+    const periodDates = answers.q_period_dates;
     const avgCycle = answers.q_avg_cycle || 28;
     const avgPeriod = answers.q_avg_period || 5;
     console.log('saveAnswersAndComplete avgCycle', avgCycle);
     console.log('saveAnswersAndComplete avgPeriod', avgPeriod);
     const height = answers.q_height_cm;
     
-    if (lmp) {
+    // Save period dates to periodLogs and set LMP
+    if (periodDates && Array.isArray(periodDates) && periodDates.length > 0) {
+      // Find the earliest date as LMP
+      const sortedDates = [...periodDates].sort();
+      const lmp = sortedDates[0];
+      
       setPreferences({
         lastMenstrualPeriod: lmp,
+        avgCycle,
+        avgPeriod,
+      });
+      
+      // Save all selected dates to periodLogs
+      const setPeriodLogs = useCycleStore.getState().setPeriodLogs;
+      setPeriodLogs(periodDates);
+    } else {
+      setPreferences({
         avgCycle,
         avgPeriod,
       });
