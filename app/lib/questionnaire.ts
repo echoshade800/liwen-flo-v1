@@ -1,260 +1,153 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography } from '../theme/tokens';
+import dayjs from 'dayjs';
 
-interface Props {
+export interface QuestionOption {
+  id: string;
+  text: string;
+  emoji?: string;
+}
+
+export interface InfoItem {
+  id: string;
+  type: 'info';
+  smallTitle?: string;
   title: string;
-  body?: string;
-  image?: any;
-  actions?: { id: string; label: string; kind?: 'primary' | 'secondary' }[];
-  onNext: () => void;
-  onActionPress?: (id: string) => void;
+  body: string;
+  required?: boolean;
 }
 
-export default function InfoCard({ title, body, image, actions, onNext, onActionPress }: Props) {
-  return (
-    <View style={styles.container}>
-      {/* Cycle phases illustration */}
-      {title.includes('four phases') && (
-        <View style={styles.cycleIllustration}>
-          <View style={styles.cycleChart}>
-            {/* Hormone curve */}
-            <View style={styles.hormoneCurve} />
-            
-            {/* Phase indicators with emojis */}
-            <View style={[styles.phaseIndicator, { left: '15%', top: '20%' }]}>
-              <Text style={styles.phaseEmoji}>😔</Text>
-            </View>
-            <View style={[styles.phaseIndicator, { left: '75%', top: '15%' }]}>
-              <Text style={styles.phaseEmoji}>😠</Text>
-            </View>
-            <View style={[styles.phaseIndicator, { left: '25%', top: '65%' }]}>
-              <Text style={styles.phaseEmoji}>😕</Text>
-            </View>
-            <View style={[styles.phaseIndicator, { left: '65%', top: '60%' }]}>
-              <Text style={styles.phaseEmoji}>😊</Text>
-            </View>
-            
-            {/* Phase labels */}
-            <View style={styles.phaseLabels}>
-              <View style={styles.phaseLabel}>
-                <View style={[styles.phaseDot, { backgroundColor: colors.period }]} />
-                <View style={styles.phaseIcon}>
-                  <Text style={styles.phaseIconText}>🩸</Text>
-                </View>
-              </View>
-              <View style={styles.phaseLabel}>
-                <View style={[styles.phaseDot, { backgroundColor: colors.fertileLight }]} />
-                <View style={styles.phaseIcon}>
-                  <Text style={styles.phaseIconText}>🔵</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
-      
-      {image && <Image source={image} style={styles.image} resizeMode="contain" />}
-      
-      {/* Small title for cycle phases info */}
-      {title.includes('four phases') && (
-        <Text style={styles.smallTitle}>Next, let's learn about your cycle.</Text>
-      )}
-      
-      <Text style={styles.title}>{title}</Text>
-      
-      {body && <Text style={styles.body}>{body}</Text>}
-      
-      {actions && actions.length > 0 && (
-        <View style={styles.actionsContainer}>
-          {actions.map((action) => (
-          <TouchableOpacity
-            key={action.id}
-            onPress={() => {
-              if (onActionPress) {
-                onActionPress(action.id);
-              }
-            }}
-            style={[
-              styles.actionButton,
-              action.kind === 'secondary' ? styles.secondaryButton : styles.primaryButton
-            ]}
-          >
-              <Text style={[
-                styles.actionText,
-                action.kind === 'secondary' ? styles.secondaryText : styles.primaryText
-              ]}>
-                {action.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-      
-      <TouchableOpacity onPress={onNext} style={[styles.nextButton]}>
-        <Text style={styles.nextButtonText}>Next</Text>
-      </TouchableOpacity>
-    </View>
-  );
+export interface QuestionItem {
+  id: string;
+  type: 'single' | 'multiple' | 'date' | 'number' | 'text';
+  title: string;
+  subtitle?: string;
+  options?: QuestionOption[];
+  required?: boolean;
+  default?: any;
+  min?: number;
+  max?: number;
+  unit?: string;
+  reassurance?: {
+    title: string;
+    content: string;
+  };
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.white,
-    borderRadius: radii.card,
-    padding: spacing(3),
-    marginBottom: spacing(2),
-    alignItems: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+export type QuestionnaireItem = InfoItem | QuestionItem;
+
+export const QUESTIONNAIRE_DATA: QuestionnaireItem[] = [
+  {
+    id: 'q_period_feelings',
+    type: 'multiple',
+    title: 'How do you feel about your period?',
+    subtitle: 'Select all that apply',
+    options: [
+      { id: 'normal', text: 'It\'s a normal part of life', emoji: '😌' },
+      { id: 'inconvenient', text: 'It\'s inconvenient', emoji: '😕' },
+      { id: 'painful', text: 'It\'s painful', emoji: '😣' },
+      { id: 'embarrassing', text: 'It\'s embarrassing', emoji: '😳' },
+      { id: 'empowering', text: 'It makes me feel connected to my body', emoji: '💪' },
+    ],
+    required: false,
+    reassurance: {
+      title: 'You\'re not alone',
+      content: 'Many people experience mixed feelings about their period. Understanding your cycle can help you feel more in control.'
+    }
   },
-  image: {
-    width: '100%',
-    height: 160,
-    marginBottom: spacing(2),
+  {
+    id: 'cycle_phases_info',
+    type: 'info',
+    smallTitle: 'Next, let\'s learn about your cycle.',
+    title: 'Each of your cycles includes four phases: menstruation, follicular phase, ovulation, and luteal phase.',
+    body: 'Your hormone levels vary in each phase. Flo will use your period logs to assess hormonal changes and provide targeted guidance to help improve your quality of life.',
+    required: false,
   },
-  title: {
-    ...typography.h3,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing(1),
-    lineHeight: 28,
+  {
+    id: 'q_lmp',
+    type: 'date',
+    title: 'When did your last period start?',
+    subtitle: 'This helps us make accurate predictions',
+    required: true,
   },
-  body: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: spacing(2),
+  {
+    id: 'q_avg_cycle',
+    type: 'number',
+    title: 'How long is your cycle usually?',
+    subtitle: 'From the first day of one period to the first day of the next',
+    min: 21,
+    max: 45,
+    default: 28,
+    unit: 'days',
+    required: true,
+    reassurance: {
+      title: 'Normal range',
+      content: 'Most cycles are between 21-35 days. Don\'t worry if yours is different - everyone\'s body is unique!'
+    }
   },
-  actionsContainer: {
-    width: '100%',
-    marginBottom: spacing(2),
+  {
+    id: 'q_avg_period',
+    type: 'number',
+    title: 'How long does your period usually last?',
+    subtitle: 'Number of days with bleeding',
+    min: 2,
+    max: 10,
+    default: 5,
+    unit: 'days',
+    required: true,
+    reassurance: {
+      title: 'Perfectly normal',
+      content: 'Period length typically ranges from 3-7 days. Tracking helps you understand your personal pattern.'
+    }
   },
-  actionButton: {
-    width: '100%',
-    paddingVertical: spacing(1.5),
-    paddingHorizontal: spacing(2),
-    borderRadius: radii.medium,
-    alignItems: 'center',
-    marginBottom: spacing(1),
+  {
+    id: 'q_height_cm',
+    type: 'number',
+    title: 'What\'s your height?',
+    subtitle: 'This helps us provide more personalized health insights',
+    min: 120,
+    max: 220,
+    default: 165,
+    unit: 'cm',
+    required: false,
   },
-  primaryButton: {
-    backgroundColor: colors.primary + '20',
-    borderWidth: 1,
-    borderColor: colors.primary,
+  {
+    id: 'q_exercise_frequency',
+    type: 'single',
+    title: 'How often do you exercise?',
+    options: [
+      { id: 'daily', text: 'Daily', emoji: '🏃‍♀️' },
+      { id: 'few_times_week', text: 'A few times a week', emoji: '💪' },
+      { id: 'weekly', text: 'Once a week', emoji: '🚶‍♀️' },
+      { id: 'rarely', text: 'Rarely', emoji: '😴' },
+      { id: 'never', text: 'Never', emoji: '🛋️' },
+    ],
+    required: false,
   },
-  secondaryButton: {
-    backgroundColor: colors.gray100,
-    borderWidth: 1,
-    borderColor: colors.gray300,
+  {
+    id: 'q_stress_level',
+    type: 'single',
+    title: 'How would you describe your stress level?',
+    options: [
+      { id: 'low', text: 'Low - I feel relaxed most of the time', emoji: '😌' },
+      { id: 'moderate', text: 'Moderate - Some stress but manageable', emoji: '😐' },
+      { id: 'high', text: 'High - Often feeling overwhelmed', emoji: '😰' },
+      { id: 'very_high', text: 'Very high - Constantly stressed', emoji: '🤯' },
+    ],
+    required: false,
+    reassurance: {
+      title: 'Stress affects cycles',
+      content: 'High stress can impact your menstrual cycle. We\'ll help you track patterns and suggest stress management techniques.'
+    }
   },
-  actionText: {
-    ...typography.caption,
-    fontWeight: '600',
+  {
+    id: 'q_sleep_quality',
+    type: 'single',
+    title: 'How is your sleep quality?',
+    options: [
+      { id: 'excellent', text: 'Excellent - I sleep well every night', emoji: '😴' },
+      { id: 'good', text: 'Good - Usually sleep well', emoji: '😊' },
+      { id: 'fair', text: 'Fair - Sometimes have trouble sleeping', emoji: '😕' },
+      { id: 'poor', text: 'Poor - Often have sleep issues', emoji: '😵' },
+    ],
+    required: false,
   },
-  primaryText: {
-    color: colors.primary,
-  },
-  secondaryText: {
-    color: colors.text,
-  },
-  nextButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.medium,
-    paddingVertical: spacing(1.5),
-    paddingHorizontal: spacing(4),
-    width: '100%',
-    alignItems: 'center',
-  },
-  nextButtonText: {
-    ...typography.body,
-    color: colors.white,
-    fontWeight: '600',
-  },
-  smallTitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing(1),
-  },
-  cycleIllustration: {
-    width: '100%',
-    height: 200,
-    marginBottom: spacing(3),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cycleChart: {
-    width: 280,
-    height: 160,
-    position: 'relative',
-    backgroundColor: colors.gray100,
-    borderRadius: radii.card,
-    overflow: 'hidden',
-  },
-  hormoneCurve: {
-    position: 'absolute',
-    top: '30%',
-    left: '10%',
-    right: '10%',
-    height: 3,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    transform: [{ scaleY: 2 }],
-  },
-  phaseIndicator: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  phaseEmoji: {
-    fontSize: 18,
-  },
-  phaseLabels: {
-    position: 'absolute',
-    bottom: spacing(2),
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: spacing(2),
-  },
-  phaseLabel: {
-    alignItems: 'center',
-  },
-  phaseDot: {
-    width: 20,
-    height: 4,
-    borderRadius: 2,
-    marginBottom: spacing(0.5),
-  },
-  phaseIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  phaseIconText: {
-    fontSize: 12,
-  },
-});
+];
