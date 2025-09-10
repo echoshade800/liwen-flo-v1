@@ -25,9 +25,9 @@ export default function PeriodDateSelector({
 
   const handleDayPress = (day: any) => {
     const dateString = day.dateString;
-    console.log('=== PeriodDateSelector Debug ===');
-    console.log('Selected dateString:', dateString);
-    console.log('Current selectedDates before update:', selectedDates);
+    console.log('=== PeriodDateSelector handleDayPress Debug ===');
+    console.log('点击的日期:', dateString);
+    console.log('点击前的 selectedDates:', selectedDates);
     
     
     // Prevent selecting future dates
@@ -42,7 +42,7 @@ export default function PeriodDateSelector({
     if (selectedDates.includes(dateString)) {
       // If clicking on an already selected date, remove it
       const newDates = selectedDates.filter(date => date !== dateString);
-      console.log('Removing date, new selectedDates:', newDates);
+      console.log('移除日期，新的 selectedDates:', newDates);
       onDatesChange(newDates);
       return;
     }
@@ -77,12 +77,8 @@ export default function PeriodDateSelector({
         for (let i = 0; i < 5; i++) {
           const periodDate = selectedDate.add(i, 'day');
           if (!periodDate.isAfter(dayjs(), 'day')) {
-            const formattedDate = periodDate.format('YYYY-MM-DD');
-            initialDates.push(formattedDate);
-            console.log('Auto-selecting date:', formattedDate);
-          }
-        }
-        console.log('First selection - all dates:', initialDates);
+            initialDates.push(periodDate.format('YYYY-MM-DD'));
+        console.log('新经期 - 合并后的日期:', combinedDates);
         onDatesChange(initialDates);
       } else {
         // Add single date to existing selection
@@ -91,6 +87,9 @@ export default function PeriodDateSelector({
         onDatesChange(newDates);
       }
     }
+    
+    console.log('=== PeriodDateSelector handleDayPress 完成 ===');
+    console.log('最终调用 onDatesChange 的参数会传递给父组件');
   };
 
   const getMarkedDates = () => {
@@ -128,7 +127,7 @@ export default function PeriodDateSelector({
             fontWeight: '600',
           }
         }
-      };
+        console.log('首次选择 - 所有日期:', initialDates);
     }
 
     return marked;

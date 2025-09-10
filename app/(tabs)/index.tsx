@@ -25,10 +25,10 @@ export default function CalendarScreen() {
   useEffect(() => {
     // 当组件挂载时，主动加载最新数据
     const refreshData = async () => {
-      console.log('refreshData');
+      console.log('=== Calendar Screen refreshData ===');
       try {
         setIsLoading(true);
-        console.log('Starting to load fresh data on home page mount');
+        console.log('开始在主页加载最新数据');
         
         // 确保连续尝试加载数据，最多尝试3次
         let attempts = 0;
@@ -44,16 +44,17 @@ export default function CalendarScreen() {
             const currentState = useCycleStore.getState();
             if (currentState.periodLogs.length > 0 || currentState.dailyLogs.length > 0) {
               loadedData = true;
-              console.log(`Data loaded successfully on attempt ${attempts}:`);
-              console.log(`- Period logs: ${currentState.periodLogs}`);
-              console.log(`- Daily logs: ${currentState.dailyLogs.length}`);
+              console.log(`第 ${attempts} 次尝试数据加载成功:`);
+              console.log(`- 经期记录: ${currentState.periodLogs.length} 条`);
+              console.log(`- 经期日期: ${currentState.periodLogs}`);
+              console.log(`- 每日记录: ${currentState.dailyLogs.length} 条`);
             } else if (attempts < maxAttempts) {
-              console.log(`No data loaded on attempt ${attempts}, retrying...`);
+              console.log(`第 ${attempts} 次尝试未加载到数据，重试中...`);
               // 等待一段时间后重试
               await new Promise(resolve => setTimeout(resolve, 500));
             }
           } catch (attemptError) {
-            console.error(`Failed to load data on attempt ${attempts}:`, attemptError);
+            console.error(`第 ${attempts} 次尝试加载数据失败:`, attemptError);
             if (attempts < maxAttempts) {
               // 等待一段时间后重试
               await new Promise(resolve => setTimeout(resolve, 500));
@@ -62,10 +63,10 @@ export default function CalendarScreen() {
         }
         
         if (!loadedData) {
-          console.warn('Failed to load data after multiple attempts');
+          console.warn('多次尝试后仍未能加载数据');
         }
       } catch (error) {
-        console.error('Failed to refresh data:', error);
+        console.error('刷新数据失败:', error);
       } finally {
         setIsLoading(false);
       }
@@ -136,11 +137,15 @@ export default function CalendarScreen() {
   }, [periodLogs, preferences.lastMenstrualPeriod, preferences.avgCycle]);
 
   const markedDates = getCalendarData(periods, preferences, currentMonth, periodLogs);
-  console.log('=== Calendar Screen Debug ===');
-  console.log('Current month:', currentMonth);
-  console.log('Period logs from store:', periodLogs);
-  console.log('Generated markedDates:', markedDates);
-  console.log('MarkedDates keys:', Object.keys(markedDates));
+  
+  console.log('=== Calendar Screen 渲染时的数据状态 ===');
+  console.log('当前月份:', currentMonth);
+  console.log('Store 中的 periodLogs:', periodLogs);
+  console.log('Store 中的 periodLogs 长度:', periodLogs.length);
+  console.log('生成的 markedDates:', markedDates);
+  console.log('markedDates 的键:', Object.keys(markedDates));
+  console.log('markedDates 键的数量:', Object.keys(markedDates).length);
+  
   const cycleInfo = calculateCurrentCycle(periods, preferences);
   const nextPeriodPrediction = getNextPeriodPrediction(preferences);
   

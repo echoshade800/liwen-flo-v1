@@ -17,10 +17,19 @@ export default function OnboardingQuestionsScreen() {
   const currentQuestion = QUESTIONNAIRE_DATA[currentIndex];
   
   const handleAnswer = (answer: any) => {
+    console.log('=== Questions handleAnswer Debug ===');
+    console.log('问题ID:', currentQuestion.id);
+    console.log('收到的答案:', answer);
+    
     setAnswers(prev => ({
       ...prev,
       [currentQuestion.id]: answer
     }));
+    
+    console.log('更新后的 answers 状态:', {
+      ...answers,
+      [currentQuestion.id]: answer
+    });
   };
 
   // 为数字题设置默认值
@@ -61,30 +70,36 @@ export default function OnboardingQuestionsScreen() {
 
   const saveAnswersAndComplete = () => {
     // Extract key data for preferences
-    console.log('saveAnswersAndComplete answers', answers);
-    const periodDates = answers.q_period_dates;
     console.log('=== saveAnswersAndComplete Debug ===');
-    console.log('Period dates from answers:', periodDates);
+    console.log('所有问卷答案:', answers);
+    
+    const periodDates = answers.q_period_dates;
+    console.log('提取的经期日期 (q_period_dates):', periodDates);
+    console.log('经期日期类型:', typeof periodDates, 'isArray:', Array.isArray(periodDates));
+    
     const avgCycle = answers.q_avg_cycle || 28;
     const avgPeriod = answers.q_avg_period || 5;
-    console.log('saveAnswersAndComplete avgCycle', avgCycle);
-    console.log('saveAnswersAndComplete avgPeriod', avgPeriod);
+    console.log('平均周期长度:', avgCycle);
+    console.log('平均经期长度:', avgPeriod);
+    
     const height = answers.q_height_cm;
     
     // Check if user selected period dates to determine next route
     const hasSelectedPeriodDates = periodDates && Array.isArray(periodDates) && periodDates.length > 0;
-    console.log('Has selected period dates:', hasSelectedPeriodDates);
+    console.log('用户是否选择了经期日期:', hasSelectedPeriodDates);
     
     if (hasSelectedPeriodDates) {
       // Calculate predicted next period date
       const sortedDates = [...periodDates].sort();
       const lastPeriodStart = sortedDates[0]; // Earliest date as LMP
-      console.log('Sorted period dates:', sortedDates);
-      console.log('Last period start (LMP):', lastPeriodStart);
+      console.log('排序后的经期日期:', sortedDates);
+      console.log('最后一次经期开始日期 (LMP):', lastPeriodStart);
+      
       const predictedDate = dayjs(lastPeriodStart).add(avgCycle, 'day').format('YYYY-MM-DD');
-      console.log('Predicted next period date:', predictedDate);
+      console.log('预测的下次经期日期:', predictedDate);
       
       // Save period dates to periodLogs and set LMP
+      console.log('=== 保存偏好设置 ===');
       setPreferences({
         lastMenstrualPeriod: lastPeriodStart,
         avgCycle,
@@ -92,15 +107,24 @@ export default function OnboardingQuestionsScreen() {
       });
       
       // Save all selected dates to periodLogs
+      console.log('=== 调用 setPeriodLogs ===');
+      console.log('即将保存的经期日期:', periodDates);
       const setPeriodLogs = useCycleStore.getState().setPeriodLogs;
-      console.log('Calling setPeriodLogs with:', periodDates);
       setPeriodLogs(periodDates);
+      
+      console.log('=== 验证保存结果 ===');
+      const currentState = useCycleStore.getState();
+      console.log('保存后 store 中的 periodLogs:', currentState.periodLogs);
+      console.log('保存后 store 中的 preferences.lastMenstrualPeriod:', currentState.preferences.lastMenstrualPeriod);
       
       // Save all questionnaire answers to profile
       setProfile({
         questionnaireAnswers: answers,
         height,
       });
+      
+      console.log('=== 导航到预测页面 ===');
+      console.log('导航参数 predictedDate:', predictedDate);
       
       // Navigate to prediction page with calculated date
       router.push({
@@ -111,6 +135,7 @@ export default function OnboardingQuestionsScreen() {
     }
     
     // If no period dates selected, save preferences without LMP
+    console.log('=== 没有选择经期日期，保存基本偏好设置 ===');
     setPreferences({
       avgCycle,
       avgPeriod,
@@ -123,6 +148,7 @@ export default function OnboardingQuestionsScreen() {
     });
 
     // Navigate directly to done page
+    console.log('=== 直接导航到完成页面 ===');
     router.push('/onboarding/done');
   };
 
