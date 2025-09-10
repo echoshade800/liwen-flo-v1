@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import dayjs from 'dayjs';
 import { useCycleStore } from '../store/useCycleStore';
 import { getCalendarData, calculateCurrentCycle, getNextPeriodPrediction } from '../lib/cycle';
+import { notificationManager } from '../lib/notificationManager';
 import { colors, spacing, typography, radii } from '../theme/tokens';
 import MonthCalendar from '../components/MonthCalendar';
 import DayInfoCard from '../components/DayInfoCard';
@@ -19,6 +20,7 @@ export default function CalendarScreen() {
   const preferences = useCycleStore(state => state.preferences);
   const periodLogs = useCycleStore(state => state.periodLogs);
   const loadFromServer = useCycleStore(state => state.loadFromServer);
+  const setPreferences = useCycleStore(state => state.setPreferences);
   
   useEffect(() => {
     // 当组件挂载时，主动加载最新数据
@@ -71,6 +73,67 @@ export default function CalendarScreen() {
     
     refreshData();
   }, [loadFromServer]);
+
+  // Monitor period logs changes and update notifications
+  useEffect(() => {
+    const updateNotificationsIfNeeded = async () => {
+      const reminderSettings = preferences.reminders;
+      
+      // Only update if reminders are enabled
+      if (!reminderSettings || !reminderSettings.enabled) {
+        return;
+      }
+
+      // Check if user marked period as started (today is in periodLogs)
+      const today = dayjs().format('YYYY-MM-DD');
+      const hasMarkedTodayAsPeriod = periodLogs.includes(today);
+      
+      if (hasMarkedTodayAsPeriod && reminderSettings.scheduledNotificationId) {
+        console.log('User marked period as started, cancelling current cycle reminder');
+        
+        // Cancel current notification
+        await notificationManager.cancelNotification(reminderSettings.scheduledNotificationId);
+        
+        // Update settings to remove cancelled notification
+        setPreferences({
+          reminders: {
+            ...reminderSettings,
+            scheduledNotificationId: undefined,
+            scheduledAt: undefined,
+          }
+        });
+      }
+
+      // Check if nextPeriodDate has changed and reschedule if needed
+      const currentNextPeriod = getNextPeriodPrediction(preferences);
+      if (currentNextPeriod && reminderSettings.nextPeriodDate !== currentNextPeriod.startDate) {
+        console.log('Next period date changed, rescheduling notification');
+        
+        // Cancel old notification
+        if (reminderSettings.scheduledNotificationId) {
+          await notificationManager.cancelNotification(reminderSettings.scheduledNotificationId);
+        }
+        
+        // Schedule new notification
+        const newNotificationId = await notificationManager.schedulePeriodReminder(currentNextPeriod.startDate);
+        
+        if (newNotificationId) {
+          const notificationTime = dayjs(currentNextPeriod.startDate).hour(9).minute(0).second(0);
+          
+          setPreferences({
+            reminders: {
+              enabled: true,
+              scheduledNotificationId: newNotificationId,
+              scheduledAt: notificationTime.format('MMM D, YYYY at 09:00'),
+              nextPeriodDate: currentNextPeriod.startDate
+            }
+          });
+        }
+      }
+    };
+
+    updateNotificationsIfNeeded();
+  }, [periodLogs, preferences.lastMenstrualPeriod, preferences.avgCycle]);
 
   const markedDates = getCalendarData(periods, preferences, currentMonth, periodLogs);
   console.log('markedDates', markedDates);
@@ -133,6 +196,10 @@ export default function CalendarScreen() {
   const handleRecordPeriod = () => {
     router.push('/period/edit');
   };
+
+  const handleSettings = () => {
+    router.push('/settings');
+  };
   
   // 显示下次月经预测信息
   const renderPredictionInfo = () => {
@@ -165,6 +232,12 @@ export default function CalendarScreen() {
   
   return (
     <SafeAreaView style={[styles.container, Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight }]}>
+      <View style={styles.topHeader}>
+        <TouchableOpacity style={styles.settingsButton} onPress={handleSettings}>
+          <Ionicons name="settings-outline" size={24} color={colors.text} />
+        </TouchableOpacity>
+      </View>
+      
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading your data...</Text>
@@ -210,6 +283,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingHorizontal: spacing(3),
+    paddingTop: spacing(1),
+    paddingBottom: spacing(1),
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   predictionCard: {
     backgroundColor: colors.period + '20',

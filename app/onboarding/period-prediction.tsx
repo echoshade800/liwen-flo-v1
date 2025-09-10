@@ -1,15 +1,85 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
+import { useCycleStore } from '../store/useCycleStore';
+import { notificationManager } from '../lib/notificationManager';
+import ReminderConfirmModal from '../components/ReminderConfirmModal';
 import { colors, radii, spacing, typography } from '../theme/tokens';
 
 export default function PeriodPredictionScreen() {
+  const [showReminderModal, setShowReminderModal] = React.useState(false);
+  
   const params = useLocalSearchParams();
   const predictedDate = params.predictedDate as string;
+  const setPreferences = useCycleStore(state => state.setPreferences);
+  const preferences = useCycleStore(state => state.preferences);
 
   const handleNext = () => {
+    // Show reminder confirmation modal
+    setShowReminderModal(true);
+  };
+
+  const handleEnableReminders = async () => {
+    setShowReminderModal(false);
+    
+    try {
+      // Schedule notification for the predicted date
+      const notificationId = await notificationManager.schedulePeriodReminder(predictedDate);
+      
+      if (notificationId) {
+        // Save notification settings
+        const notificationTime = dayjs(predictedDate).hour(9).minute(0).second(0);
+        
+        setPreferences({
+          reminders: {
+            enabled: true,
+            scheduledNotificationId: notificationId,
+            scheduledAt: notificationTime.format('MMM D, YYYY at 09:00'),
+            nextPeriodDate: predictedDate
+          }
+        });
+        
+        Alert.alert(
+          'Reminder Set',
+          `You'll get a reminder on ${notificationTime.format('MMM D')} at 09:00.`,
+          [
+            {
+              text: 'OK',
+              onPress: () => router.push('/onboarding/done')
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Permission Required',
+          'Please enable notifications in your device settings to receive period reminders.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.push('/onboarding/done')
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error enabling reminders:', error);
+      Alert.alert(
+        'Error',
+        'Failed to set up reminders. You can enable them later in settings.',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.push('/onboarding/done')
+          }
+        ]
+      );
+    }
+  };
+
+  const handleSkipReminders = () => {
+    setShowReminderModal(false);
     router.push('/onboarding/done');
   };
 
@@ -53,6 +123,13 @@ export default function PeriodPredictionScreen() {
         <TouchableOpacity style={styles.button} onPress={handleNext}>
           <Text style={styles.buttonText}>Next</Text>
         </TouchableOpacity>
+        
+        <ReminderConfirmModal
+          visible={showReminderModal}
+          onConfirm={handleEnableReminders}
+          onCancel={handleSkipReminders}
+          nextPeriodDate={predictedDate}
+        />
       </View>
     </SafeAreaView>
   );

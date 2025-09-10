@@ -38,7 +38,12 @@ export type DailyLog = {
 export type Preferences = {
   avgCycle: number;
   avgPeriod: number;
-  reminders?: boolean;
+  reminders?: {
+    enabled: boolean;
+    scheduledNotificationId?: string;
+    scheduledAt?: string;
+    nextPeriodDate?: string;
+  };
   healthSync?: boolean;
   lastMenstrualPeriod?: string;
 };
@@ -88,7 +93,7 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
   preferences: {
     avgCycle: 28,
     avgPeriod: 5,
-    reminders: true,
+    reminders: { enabled: false },
     healthSync: false
   },
   predictionHistory: null, // 新增：预测历史初始值
@@ -484,7 +489,7 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
         preferences: {
           avgCycle: 28,
           avgPeriod: 5,
-          reminders: true,
+          reminders: { enabled: false },
           healthSync: false
         },
         error: null
