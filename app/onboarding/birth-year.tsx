@@ -21,21 +21,6 @@ export default function BirthYearScreen() {
         age: age 
       });
       
-      router.push('/onboarding/questions');
-    }
-  };
-
-  const handleContinue = () => {
-    if (selectedYear) {
-      // Calculate age from birth year
-      const age = currentYear - selectedYear;
-      
-      // Save birth year and calculated age to profile
-      setProfile({ 
-        birthYear: selectedYear,
-        age: age 
-      });
-      
       router.push('/onboarding/cycle-intro');
     }
   };
