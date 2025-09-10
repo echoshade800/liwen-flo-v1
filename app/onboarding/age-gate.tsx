@@ -18,18 +18,7 @@ export default function AgeGateScreen() {
 
   const handleContinue = () => {
     if (selectedAge) {
-      if (selectedAge < 18) {
-        Alert.alert(
-          'Age Restriction',
-          'This app is for users 18 and older. If you are under 18, please use under parental or guardian guidance.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Confirm', onPress: () => proceed() }
-          ]
-        );
-      } else {
-        proceed();
-      }
+      proceed();
     }
   };
 
