@@ -262,7 +262,7 @@ export function calculatePeriodLengthStatus(periods: PeriodEntry[]): 'green' | '
 
 /**
  * 获取日历显示数据（增强版）
- * 支持基于历史预测的受孕窗口和排卵日显示
+ * 支持完整的未来周期预测：经期、受孕窗口、排卵日
  */
 export function getCalendarData(
   periods: PeriodEntry[],
@@ -281,50 +281,53 @@ export function getCalendarData(
   const monthStart = dayjs(month).startOf('month');
   const cycleInfo = calculateCurrentCycle(periods, preferences);
   const monthEnd = monthStart.endOf('month');
+  const today = dayjs();
 
   const calendarData: Record<string, any> = {};
   
-  // 计算预测历史
-  const predictionHistory = calculatePredictionHistory(periodLogs, preferences);
-  console.log('=== 预测历史 ===');
-  console.log('最新预测:', predictionHistory.latestPrediction);
-  console.log('历史预测数量:', predictionHistory.historicalPredictions.length);
-
-  // 为当前查看的月份生成未来周期预测数据（不预测过去）
-  const generateFutureCyclePredictionsForMonth = (referenceDate: dayjs.Dayjs, cycleLength: number, periodLength: number, earliestPeriodDate?: dayjs.Dayjs) => {
+  // 生成完整的未来周期预测（经期、排卵日、受孕窗口）
+  const generateCompleteFuturePredictions = (referenceDate: dayjs.Dayjs, cycleLength: number, periodLength: number) => {
     const predictions: Array<{
       periodStart: dayjs.Dayjs;
       periodEnd: dayjs.Dayjs;
       ovulationDate: dayjs.Dayjs;
       fertileStart: dayjs.Dayjs;
       fertileEnd: dayjs.Dayjs;
+      cycleNumber: number;
     }> = [];
 
     // 计算排卵日（周期长度-14天，最小为第14天）
     const ovulationDay = Math.max(14, cycleLength - 14);
 
-    // 只计算未来的周期（从当前参考日期开始向后计算6个周期）
+    // 计算未来6个周期的完整预测
     for (let cycleOffset = 1; cycleOffset <= 6; cycleOffset++) {
       const periodStart = referenceDate.add(cycleOffset * cycleLength, 'day');
+      
+      // 只预测未来，不预测过去
+      if (periodStart.isBefore(today)) {
+        continue;
+      }
+      
       const periodEnd = periodStart.add(periodLength - 1, 'day');
       const ovulationDate = periodStart.add(ovulationDay - 1, 'day');
       const fertileStart = ovulationDate.subtract(5, 'day');
       const fertileEnd = ovulationDate.add(1, 'day');
 
-      // 如果有最早经期日期限制，确保不预测比最早记录更早的时间
-      if (earliestPeriodDate && periodStart.isBefore(earliestPeriodDate)) {
-        continue;
-      }
-
-      // 检查这个周期是否与当前月份有重叠
-      if (periodStart.isBefore(monthEnd.add(1, 'day')) && periodEnd.isAfter(monthStart.subtract(1, 'day')) ||
-          fertileStart.isBefore(monthEnd.add(1, 'day')) && fertileEnd.isAfter(monthStart.subtract(1, 'day'))) {
+      // 检查这个周期的任何部分是否与当前月份重叠
+      const hasOverlap = (
+        (periodStart.isSameOrBefore(monthEnd) && periodEnd.isSameOrAfter(monthStart)) ||
+        (fertileStart.isSameOrBefore(monthEnd) && fertileEnd.isSameOrAfter(monthStart)) ||
+        (ovulationDate.isBetween(monthStart, monthEnd, 'day', '[]'))
+      );
+      
+      if (hasOverlap) {
         predictions.push({
           periodStart,
           periodEnd,
           ovulationDate,
           fertileStart,
           fertileEnd
+          cycleNumber: cycleOffset
         });
       }
     }
@@ -376,116 +379,35 @@ export function getCalendarData(
     }
   });
 
-  console.log('=== getCalendarData 处理完成 ===');
-  console.log('月份', month, '标记的日期总数:', Object.keys(calendarData).length);
-  console.log('标记详情:', Object.keys(calendarData).map(date => 
-    `${date}: ${calendarData[date].type}`
-  ));
-  
-  // 使用增强的预测历史系统标记受孕窗口和排卵日
-  predictionHistory.historicalPredictions.forEach((prediction, index) => {
-    const isLatestPrediction = index === 0;
-    const ovulationDate = dayjs(prediction.ovulationDate);
-    const fertileStart = dayjs(prediction.fertileWindowStart);
-    const fertileEnd = dayjs(prediction.fertileWindowEnd);
-    
-    // 检查预测是否与当前月份重叠
-    if (fertileStart.isBefore(monthEnd.add(1, 'day')) && fertileEnd.isAfter(monthStart.subtract(1, 'day'))) {
-      console.log(`应用预测 ${prediction.id}:`, {
-        source: prediction.source,
-        confidence: prediction.confidence,
-        ovulation: prediction.ovulationDate,
-        fertile: `${prediction.fertileWindowStart} - ${prediction.fertileWindowEnd}`
-      });
-      
-      // 标记受孕窗口
-      let current = fertileStart;
-      while (current.isSameOrBefore(fertileEnd)) {
-        if (current.isBetween(monthStart, monthEnd, 'day', '[]')) {
-          const dateKey = current.format('YYYY-MM-DD');
-          
-          // 只有在没有其他标记时才显示受孕窗口
-          if (!calendarData[dateKey]) {
-            const isOvulationDay = current.isSame(ovulationDate, 'day');
-            
-            // 根据预测置信度和来源调整显示样式
-            let opacity = '100'; // 默认完全不透明
-            if (prediction.confidence === 'medium') {
-              opacity = '80';
-            } else if (prediction.confidence === 'low') {
-              opacity = '60';
-            }
-            
-            // 最新预测使用完全不透明，历史预测使用透明度
-            if (!isLatestPrediction) {
-              opacity = '70';
-            }
-            
-            const backgroundColor = isOvulationDay ? 
-              colors.ovulation + (opacity === '100' ? '' : opacity) : 
-              colors.fertileLight + (opacity === '100' ? '' : opacity);
-            
-            calendarData[dateKey] = {
-              selectedColor: backgroundColor,
-              type: isOvulationDay ? 'ovulation' : 'fertile',
-              predictionInfo: {
-                id: prediction.id,
-                source: prediction.source,
-                confidence: prediction.confidence,
-                basedOn: prediction.basedOnPeriodDate
-              },
-              customStyles: {
-                container: {
-                  backgroundColor,
-                  borderRadius: 16,
-                  // 添加边框来区分不同预测来源
-                  ...(prediction.source === 'historical_period' && {
-                    borderWidth: 1,
-                    borderColor: colors.gray300
-                  })
-                },
-                text: {
-                  color: colors.white,
-                  fontWeight: '600',
-                }
-              }
-            };
-          }
-        }
-        current = current.add(1, 'day');
-      }
-    }
-  });
-
-  // 计算最早的经期日期，用于限制预测范围
-  let earliestPeriodDate: dayjs.Dayjs | null = null;
-  if (periodLogs.length > 0) {
-    const sortedLogs = [...periodLogs].sort();
-    earliestPeriodDate = dayjs(sortedLogs[0]);
-    console.log('最早经期日期:', earliestPeriodDate.format('YYYY-MM-DD'));
-  }
-
-  // 使用增强方法生成未来经期预测（不预测过去）
+  // 生成完整的未来周期预测
   let referenceDate: dayjs.Dayjs | null = null;
   
   if (preferences.lastMenstrualPeriod) {
     referenceDate = dayjs(preferences.lastMenstrualPeriod);
   } else if (periods.length > 0) {
     referenceDate = dayjs(periods[periods.length - 1].startDate);
+  } else if (periodLogs.length > 0) {
+    // 如果没有LMP，使用最近的用户记录日期
+    const sortedLogs = [...periodLogs].sort();
+    referenceDate = dayjs(sortedLogs[sortedLogs.length - 1]);
   }
 
   if (referenceDate) {
-    const predictions = generateFutureCyclePredictionsForMonth(
+    console.log('基于参考日期生成预测:', referenceDate.format('YYYY-MM-DD'));
+    
+    const predictions = generateCompleteFuturePredictions(
       referenceDate, 
       preferences.avgCycle, 
-      preferences.avgPeriod,
-      earliestPeriodDate || undefined
+      preferences.avgPeriod
     );
 
-    console.log(`生成了 ${predictions.length} 个未来经期预测`);
+    console.log(`生成了 ${predictions.length} 个完整周期预测`);
 
-    // 只标记预测的经期，受孕窗口已由上面的新系统处理
+    // 标记预测的经期、排卵日和受孕窗口
     predictions.forEach(prediction => {
+      const isNearestCycle = prediction.cycleNumber === 1; // 最近的一个周期
+      
+      // 1. 标记预测经期
       let current = prediction.periodStart;
       while (current.isSameOrBefore(prediction.periodEnd)) {
         if (current.isBetween(monthStart, monthEnd, 'day', '[]')) {
@@ -509,6 +431,62 @@ export function getCalendarData(
         }
         current = current.add(1, 'day');
       }
+      
+      // 2. 标记排卵日
+      if (prediction.ovulationDate.isBetween(monthStart, monthEnd, 'day', '[]')) {
+        const ovulationKey = prediction.ovulationDate.format('YYYY-MM-DD');
+        if (!calendarData[ovulationKey]) {
+          // 最近的排卵日用深色，远期的用浅色
+          const ovulationColor = isNearestCycle ? colors.ovulation : colors.ovulation + '70';
+          
+          calendarData[ovulationKey] = {
+            selectedColor: ovulationColor,
+            type: 'predicted_ovulation',
+            cycleNumber: prediction.cycleNumber,
+            customStyles: {
+              container: {
+                backgroundColor: ovulationColor,
+                borderRadius: 16,
+              },
+              text: {
+                color: colors.white,
+                fontWeight: '600',
+              }
+            }
+          };
+        }
+      }
+      
+      // 3. 标记受孕窗口
+      let fertileDay = prediction.fertileStart;
+      while (fertileDay.isSameOrBefore(prediction.fertileEnd)) {
+        if (fertileDay.isBetween(monthStart, monthEnd, 'day', '[]')) {
+          const fertileKey = fertileDay.format('YYYY-MM-DD');
+          
+          // 跳过已经标记为排卵日的日期
+          if (!calendarData[fertileKey]) {
+            // 最近的受孕窗口用深色，远期的用浅色
+            const fertileColor = isNearestCycle ? colors.fertileLight : colors.fertileLight + '60';
+            
+            calendarData[fertileKey] = {
+              selectedColor: fertileColor,
+              type: 'predicted_fertile',
+              cycleNumber: prediction.cycleNumber,
+              customStyles: {
+                container: {
+                  backgroundColor: fertileColor,
+                  borderRadius: 16,
+                },
+                text: {
+                  color: colors.white,
+                  fontWeight: '600',
+                }
+              }
+            };
+          }
+        }
+        fertileDay = fertileDay.add(1, 'day');
+      }
     });
   }
 
@@ -525,7 +503,17 @@ export function getCalendarData(
         if (!calendarData[dateKey]) {
           calendarData[dateKey] = {
             selectedColor: colors.period,
-            type: 'period'
+            type: 'period',
+            customStyles: {
+              container: {
+                backgroundColor: colors.period,
+                borderRadius: 16,
+              },
+              text: {
+                color: colors.white,
+                fontWeight: '600',
+              }
+            }
           };
         }
       }
@@ -533,8 +521,11 @@ export function getCalendarData(
     }
   });
 
-  // 注意：原有的单次预测逻辑已被上面的完整周期预测替代
-  // 新的预测逻辑会为每个月份生成完整的过去和未来周期预测
+  console.log('=== getCalendarData 处理完成 ===');
+  console.log('月份', month, '标记的日期总数:', Object.keys(calendarData).length);
+  console.log('标记详情:', Object.keys(calendarData).map(date => 
+    `${date}: ${calendarData[date].type}${calendarData[date].cycleNumber ? ` (周期${calendarData[date].cycleNumber})` : ''}`
+  ));
 
   return calendarData;
 }

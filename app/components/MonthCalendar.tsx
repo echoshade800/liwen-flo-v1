@@ -148,6 +148,10 @@ export default function MonthCalendar({
           <View style={[styles.legendDot, { backgroundColor: colors.period + '80' }]} />
           <Text style={styles.legendText}>Predicted</Text>
         </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.fertileLight + '60' }]} />
+          <Text style={styles.legendText}>Future fertile</Text>
+        </View>
       </View>
     </View>
   );
