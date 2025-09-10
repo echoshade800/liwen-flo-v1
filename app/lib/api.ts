@@ -13,7 +13,7 @@ const API_BASE_URL = (() => {
   
   // 检查是否在开发模式下
   if (__DEV__) {
-    return 'http://100.28.58.186:3007/api';
+    return 'http://localhost:3007/api';
   }
   console.log('go local server url');
   
