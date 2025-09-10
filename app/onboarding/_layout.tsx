@@ -13,6 +13,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="feature-intro" />
       <Stack.Screen name="questions" />
       <Stack.Screen name="done" />
+      <Stack.Screen name="period-prediction" />
     </Stack>
   );
 }

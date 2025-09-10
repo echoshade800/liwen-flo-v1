@@ -69,14 +69,18 @@ export default function OnboardingQuestionsScreen() {
     console.log('saveAnswersAndComplete avgPeriod', avgPeriod);
     const height = answers.q_height_cm;
     
-    // Save period dates to periodLogs and set LMP
-    if (periodDates && Array.isArray(periodDates) && periodDates.length > 0) {
-      // Find the earliest date as LMP
+    // Check if user selected period dates to determine next route
+    const hasSelectedPeriodDates = periodDates && Array.isArray(periodDates) && periodDates.length > 0;
+    
+    if (hasSelectedPeriodDates) {
+      // Calculate predicted next period date
       const sortedDates = [...periodDates].sort();
-      const lmp = sortedDates[0];
+      const lastPeriodStart = sortedDates[0]; // Earliest date as LMP
+      const predictedDate = dayjs(lastPeriodStart).add(avgCycle, 'day').format('YYYY-MM-DD');
       
+      // Save period dates to periodLogs and set LMP
       setPreferences({
-        lastMenstrualPeriod: lmp,
+        lastMenstrualPeriod: lastPeriodStart,
         avgCycle,
         avgPeriod,
       });
@@ -84,12 +88,26 @@ export default function OnboardingQuestionsScreen() {
       // Save all selected dates to periodLogs
       const setPeriodLogs = useCycleStore.getState().setPeriodLogs;
       setPeriodLogs(periodDates);
-    } else {
-      setPreferences({
-        avgCycle,
-        avgPeriod,
+      
+      // Save all questionnaire answers to profile
+      setProfile({
+        questionnaireAnswers: answers,
+        height,
       });
+      
+      // Navigate to prediction page with calculated date
+      router.push({
+        pathname: '/onboarding/period-prediction',
+        params: { predictedDate }
+      });
+      return;
     }
+    
+    // If no period dates selected, save preferences without LMP
+    setPreferences({
+      avgCycle,
+      avgPeriod,
+    });
 
     // Save all questionnaire answers to profile
     setProfile({
@@ -97,6 +115,7 @@ export default function OnboardingQuestionsScreen() {
       height,
     });
 
+    // Navigate directly to done page
     router.push('/onboarding/done');
   };
 
