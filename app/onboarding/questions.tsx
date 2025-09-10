@@ -3,8 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Pla
 import { router } from 'expo-router';
 import { useCycleStore } from '../store/useCycleStore';
 import { colors, radii, spacing, typography } from '../theme/tokens';
-import { getQuestions } from '../lib/questionnaireData';
-import { Question, QuestionnaireAnswers } from '../lib/types';
+import { getQuestions, Question, QuestionnaireAnswers } from '../lib/questionnaire';
 import InfoCard from '../components/InfoCard';
 import PeriodDateSelector from '../components/PeriodDateSelector';
 import WheelNumberPicker from '../components/WheelNumberPicker';
