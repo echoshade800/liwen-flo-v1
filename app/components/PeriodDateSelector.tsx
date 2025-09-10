@@ -78,7 +78,9 @@ export default function PeriodDateSelector({
           const periodDate = selectedDate.add(i, 'day');
           if (!periodDate.isAfter(dayjs(), 'day')) {
             initialDates.push(periodDate.format('YYYY-MM-DD'));
-        console.log('新经期 - 合并后的日期:', combinedDates);
+          }
+        }
+        console.log('首次选择 - 所有日期:', initialDates);
         onDatesChange(initialDates);
       } else {
         // Add single date to existing selection
@@ -127,7 +129,7 @@ export default function PeriodDateSelector({
             fontWeight: '600',
           }
         }
-        console.log('首次选择 - 所有日期:', initialDates);
+      };
     }
 
     return marked;
