@@ -270,11 +270,13 @@ export function getCalendarData(
   month: string, // YYYY-MM format
   periodLogs: string[] = [] // 用户手动选择的经期日期
 ) {
-  console.log('=== getCalendarData Debug ===');
-  console.log('Input month:', month);
-  console.log('Input periodLogs:', periodLogs);
-  console.log('periodLogs length:', periodLogs.length);
-  console.log('periodLogs content:', periodLogs.map((d, i) => `${i}: "${d}"`));
+  console.log('=== getCalendarData 开始处理 ===');
+  console.log('目标月份:', month);
+  console.log('接收到的 periodLogs:', {
+    data: periodLogs,
+    length: periodLogs.length,
+    details: periodLogs.map((d, i) => `${i}: "${d}"`)
+  });
   
   const monthStart = dayjs(month).startOf('month');
   const cycleInfo = calculateCurrentCycle(periods, preferences);
@@ -332,18 +334,23 @@ export function getCalendarData(
 
   // 优先标记用户手动选择的经期日期
   periodLogs.forEach(dateString => {
-    console.log('Processing periodLog date:', dateString);
+    console.log('处理经期日期:', dateString);
     try {
       // 解析日期并确保格式正确
       const date = dayjs(dateString);
-      console.log('Parsed date:', date.format('YYYY-MM-DD'), 'isValid:', date.isValid());
+      console.log('解析结果:', {
+        original: dateString,
+        parsed: date.format('YYYY-MM-DD'),
+        isValid: date.isValid(),
+        inCurrentMonth: date.isBetween(monthStart, monthEnd, 'day', '[]')
+      });
+      
       if (date.isValid()) {
         // 使用标准格式 'YYYY-MM-DD' 作为键，确保与react-native-calendars兼容
         const formattedDate = date.format('YYYY-MM-DD');
-        console.log('Formatted date:', formattedDate);
         
         if (date.isBetween(monthStart, monthEnd, 'day', '[]')) {
-          console.log('Date is in current month, marking:', formattedDate);
+          console.log('✅ 日期在当前月份，标记为经期:', formattedDate);
           calendarData[formattedDate] = {
             selectedColor: colors.period,
             type: 'user_period',
@@ -358,23 +365,22 @@ export function getCalendarData(
               }
             }
           };
-          console.log(`✅ Successfully marked user period date: ${formattedDate}`);
         } else {
-          console.log('Date is outside current month range:', formattedDate);
+          console.log('⏭️ 日期不在当前月份范围:', formattedDate);
         }
       } else {
-        console.warn(`Invalid date in periodLogs: ${dateString}`);
+        console.warn(`无效日期: ${dateString}`);
       }
     } catch (error) {
-      console.error(`Error processing periodLog date ${dateString}:`, error);
+      console.error(`处理日期 ${dateString} 时出错:`, error);
     }
   });
 
-  console.log('=== Final calendarData for month', month, '===');
-  console.log('Total marked dates:', Object.keys(calendarData).length);
-  Object.keys(calendarData).forEach(date => {
-    console.log(`${date}: ${calendarData[date].type}`);
-  });
+  console.log('=== getCalendarData 处理完成 ===');
+  console.log('月份', month, '标记的日期总数:', Object.keys(calendarData).length);
+  console.log('标记详情:', Object.keys(calendarData).map(date => 
+    `${date}: ${calendarData[date].type}`
+  ));
   
   // 使用增强的预测历史系统标记受孕窗口和排卵日
   predictionHistory.historicalPredictions.forEach((prediction, index) => {

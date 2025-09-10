@@ -25,14 +25,14 @@ export default function PeriodDateSelector({
 
   const handleDayPress = (day: any) => {
     const dateString = day.dateString;
-    console.log('=== PeriodDateSelector handleDayPress Debug ===');
-    console.log('点击的日期:', dateString);
-    console.log('点击前的 selectedDates:', selectedDates);
+    console.log('=== PeriodDateSelector handleDayPress ===');
+    console.log('用户点击日期:', dateString);
+    console.log('当前已选日期:', selectedDates);
     
     
     // Prevent selecting future dates
     if (dayjs(dateString).isAfter(dayjs(), 'day')) {
-      console.log('Ignoring future date:', dateString);
+      console.log('忽略未来日期:', dateString);
       return;
     }
 
@@ -42,7 +42,7 @@ export default function PeriodDateSelector({
     if (selectedDates.includes(dateString)) {
       // If clicking on an already selected date, remove it
       const newDates = selectedDates.filter(date => date !== dateString);
-      console.log('移除日期，新的 selectedDates:', newDates);
+      console.log('取消选择日期，更新后:', newDates);
       onDatesChange(newDates);
       return;
     }
@@ -67,7 +67,7 @@ export default function PeriodDateSelector({
         }
       }
       const combinedDates = [...selectedDates, ...newPeriodDates].sort();
-      console.log('New period - combined dates:', combinedDates);
+      console.log('新经期组合日期:', combinedDates);
       onDatesChange(combinedDates);
     } else {
       // First selection or extending existing period
@@ -80,18 +80,17 @@ export default function PeriodDateSelector({
             initialDates.push(periodDate.format('YYYY-MM-DD'));
           }
         }
-        console.log('首次选择 - 所有日期:', initialDates);
+        console.log('首次选择自动填充日期:', initialDates);
         onDatesChange(initialDates);
       } else {
         // Add single date to existing selection
         const newDates = [...selectedDates, dateString].sort();
-        console.log('Adding single date, new selectedDates:', newDates);
+        console.log('添加单个日期，更新后:', newDates);
         onDatesChange(newDates);
       }
     }
     
-    console.log('=== PeriodDateSelector handleDayPress 完成 ===');
-    console.log('最终调用 onDatesChange 的参数会传递给父组件');
+    console.log('=== PeriodDateSelector 日期选择完成 ===');
   };
 
   const getMarkedDates = () => {

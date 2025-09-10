@@ -122,18 +122,21 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
   },
 
   setPeriodLogs: function(dates: string[]) {
-    console.log('=== setPeriodLogs Debug ===');
-    console.log('接收到的新 dates:', dates);
-    console.log('dates 类型:', typeof dates, 'isArray:', Array.isArray(dates));
-    console.log('dates 内容详细:', dates.map((d, i) => `${i}: "${d}" (${typeof d})`));
-    console.log('当前 store 中的 periodLogs:', get().periodLogs);
+    console.log('=== Store setPeriodLogs ===');
+    console.log('接收参数:', {
+      dates: dates,
+      type: typeof dates,
+      isArray: Array.isArray(dates),
+      length: Array.isArray(dates) ? dates.length : 'N/A'
+    });
+    console.log('当前 Store periodLogs:', get().periodLogs);
     
     // 确保所有日期都是有效的 YYYY-MM-DD 格式
     const validatedDates = dates
       .filter(date => {
         const isValid = dayjs(date).isValid();
         if (!isValid) {
-          console.warn('Invalid date found:', date);
+          console.warn('发现无效日期:', date);
         }
         return isValid;
       })
@@ -141,7 +144,7 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
       .filter((date, index, arr) => arr.indexOf(date) === index) // 去重
       .sort();
     
-    console.log('验证后的 validatedDates:', validatedDates);
+    console.log('验证和格式化后的日期:', validatedDates);
     
     set(function(state) {
       return {
@@ -150,7 +153,7 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
       };
     });
     
-    console.log('更新后 store 中的 periodLogs:', get().periodLogs);
+    console.log('Store 更新完成，新的 periodLogs:', get().periodLogs);
     
     // 强制触发重新渲染 - 通过更新一个时间戳
     set(function(state) {
@@ -163,7 +166,7 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
     // 更新预测历史
     get().updatePredictionHistory();
     
-    console.log('触发 syncToServer...');
+    console.log('开始同步到服务器...');
     get().syncToServer();
   },
   

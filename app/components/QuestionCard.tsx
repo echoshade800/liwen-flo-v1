@@ -34,8 +34,11 @@ export default function QuestionCard({ question, answer, onAnswer, onNext }: Que
   }, [question.type, answer]);
 
   const handlePeriodDatesChange = (dates: string[]) => {
+    console.log('=== QuestionCard handlePeriodDatesChange ===');
+    console.log('从 PeriodDateSelector 接收到的日期:', dates);
     setSelectedPeriodDates(dates);
     onAnswer(dates);
+    console.log('已调用 onAnswer，传递给 Questions 页面');
   };
 
   const handleSkipPeriodDates = () => {

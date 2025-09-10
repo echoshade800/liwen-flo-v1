@@ -17,16 +17,16 @@ export default function OnboardingQuestionsScreen() {
   const currentQuestion = QUESTIONNAIRE_DATA[currentIndex];
   
   const handleAnswer = (answer: any) => {
-    console.log('=== Questions handleAnswer Debug ===');
+    console.log('=== Questions handleAnswer ===');
     console.log('问题ID:', currentQuestion.id);
-    console.log('收到的答案:', answer);
+    console.log('收到的答案:', answer, '类型:', typeof answer, '是否数组:', Array.isArray(answer));
     
     setAnswers(prev => ({
       ...prev,
       [currentQuestion.id]: answer
     }));
     
-    console.log('更新后的 answers 状态:', {
+    console.log('Questions 页面 answers 状态已更新:', {
       ...answers,
       [currentQuestion.id]: answer
     });
@@ -70,52 +70,55 @@ export default function OnboardingQuestionsScreen() {
 
   const saveAnswersAndComplete = () => {
     // Extract key data for preferences
-    console.log('=== saveAnswersAndComplete Debug ===');
+    console.log('=== Questions saveAnswersAndComplete ===');
     console.log('所有问卷答案:', answers);
     
     const periodDates = answers.q_period_dates;
-    console.log('提取的经期日期 (q_period_dates):', periodDates);
-    console.log('经期日期类型:', typeof periodDates, 'isArray:', Array.isArray(periodDates));
+    console.log('提取的经期日期:', periodDates);
+    console.log('日期数据详情:', {
+      type: typeof periodDates,
+      isArray: Array.isArray(periodDates),
+      length: Array.isArray(periodDates) ? periodDates.length : 'N/A',
+      content: periodDates
+    });
     
     const avgCycle = answers.q_avg_cycle || 28;
     const avgPeriod = answers.q_avg_period || 5;
-    console.log('平均周期长度:', avgCycle);
-    console.log('平均经期长度:', avgPeriod);
     
     const height = answers.q_height_cm;
     
     // Check if user selected period dates to determine next route
     const hasSelectedPeriodDates = periodDates && Array.isArray(periodDates) && periodDates.length > 0;
-    console.log('用户是否选择了经期日期:', hasSelectedPeriodDates);
+    console.log('是否有有效的经期日期选择:', hasSelectedPeriodDates);
     
     if (hasSelectedPeriodDates) {
       // Calculate predicted next period date
       const sortedDates = [...periodDates].sort();
       const lastPeriodStart = sortedDates[0]; // Earliest date as LMP
-      console.log('排序后的经期日期:', sortedDates);
-      console.log('最后一次经期开始日期 (LMP):', lastPeriodStart);
+      console.log('排序后的日期:', sortedDates);
+      console.log('设定 LMP 为:', lastPeriodStart);
       
       const predictedDate = dayjs(lastPeriodStart).add(avgCycle, 'day').format('YYYY-MM-DD');
-      console.log('预测的下次经期日期:', predictedDate);
+      console.log('预测下次经期:', predictedDate);
       
       // Save period dates to periodLogs and set LMP
-      console.log('=== 保存偏好设置 ===');
+      console.log('=== 开始保存数据到 Store ===');
       setPreferences({
         lastMenstrualPeriod: lastPeriodStart,
         avgCycle,
         avgPeriod,
       });
+      console.log('偏好设置已保存');
       
       // Save all selected dates to periodLogs
-      console.log('=== 调用 setPeriodLogs ===');
-      console.log('即将保存的经期日期:', periodDates);
+      console.log('调用 setPeriodLogs，传入日期:', periodDates);
       const setPeriodLogs = useCycleStore.getState().setPeriodLogs;
       setPeriodLogs(periodDates);
       
-      console.log('=== 验证保存结果 ===');
+      // 验证保存结果
       const currentState = useCycleStore.getState();
-      console.log('保存后 store 中的 periodLogs:', currentState.periodLogs);
-      console.log('保存后 store 中的 preferences.lastMenstrualPeriod:', currentState.preferences.lastMenstrualPeriod);
+      console.log('Store 验证 - periodLogs:', currentState.periodLogs);
+      console.log('Store 验证 - LMP:', currentState.preferences.lastMenstrualPeriod);
       
       // Save all questionnaire answers to profile
       setProfile({
@@ -123,8 +126,7 @@ export default function OnboardingQuestionsScreen() {
         height,
       });
       
-      console.log('=== 导航到预测页面 ===');
-      console.log('导航参数 predictedDate:', predictedDate);
+      console.log('导航到预测页面，参数:', predictedDate);
       
       // Navigate to prediction page with calculated date
       router.push({
@@ -135,7 +137,7 @@ export default function OnboardingQuestionsScreen() {
     }
     
     // If no period dates selected, save preferences without LMP
-    console.log('=== 没有选择经期日期，保存基本偏好设置 ===');
+    console.log('未选择经期日期，保存基本设置');
     setPreferences({
       avgCycle,
       avgPeriod,
@@ -148,7 +150,7 @@ export default function OnboardingQuestionsScreen() {
     });
 
     // Navigate directly to done page
-    console.log('=== 直接导航到完成页面 ===');
+    console.log('直接导航到完成页面');
     router.push('/onboarding/done');
   };
 

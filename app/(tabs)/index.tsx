@@ -138,13 +138,17 @@ export default function CalendarScreen() {
 
   const markedDates = getCalendarData(periods, preferences, currentMonth, periodLogs);
   
-  console.log('=== Calendar Screen 渲染时的数据状态 ===');
-  console.log('当前月份:', currentMonth);
-  console.log('Store 中的 periodLogs:', periodLogs);
-  console.log('Store 中的 periodLogs 长度:', periodLogs.length);
-  console.log('生成的 markedDates:', markedDates);
-  console.log('markedDates 的键:', Object.keys(markedDates));
-  console.log('markedDates 键的数量:', Object.keys(markedDates).length);
+  console.log('=== Calendar Screen 主页渲染 ===');
+  console.log('当前显示月份:', currentMonth);
+  console.log('Store 中的经期数据:', {
+    periodLogs: periodLogs,
+    length: periodLogs.length,
+    preferences_LMP: preferences.lastMenstrualPeriod
+  });
+  console.log('生成的日历标记:', {
+    markedDates: Object.keys(markedDates),
+    count: Object.keys(markedDates).length
+  });
   
   const cycleInfo = calculateCurrentCycle(periods, preferences);
   const nextPeriodPrediction = getNextPeriodPrediction(preferences);
