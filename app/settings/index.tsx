@@ -69,6 +69,8 @@ export default function SettingsScreen() {
         const notificationId = await notificationManager.schedulePeriodReminder(nextPeriodInfo.date);
         
         if (notificationId) {
+          console.log('Notification scheduled successfully with ID:', notificationId);
+          
           // Save notification settings
           setPreferences({
             reminders: {
@@ -85,6 +87,7 @@ export default function SettingsScreen() {
             [{ text: 'OK' }]
           );
         } else {
+          console.log('Failed to schedule notification');
           Alert.alert(
             'Failed to Set Reminder',
             'Unable to schedule notification. Please check your notification permissions.',

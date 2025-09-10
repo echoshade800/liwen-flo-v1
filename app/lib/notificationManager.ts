@@ -69,6 +69,8 @@ class NotificationManager {
       }
 
       console.log('Scheduling period reminder for:', notificationDate.format('YYYY-MM-DD HH:mm:ss'));
+      console.log('Current time:', dayjs().format('YYYY-MM-DD HH:mm:ss'));
+      console.log('Time until notification:', notificationDate.diff(dayjs(), 'minute'), 'minutes');
 
       // Schedule the notification
       const notificationId = await Notifications.scheduleNotificationAsync({
@@ -83,6 +85,7 @@ class NotificationManager {
       });
 
       console.log('Period reminder scheduled with ID:', notificationId);
+      console.log('Notification will trigger at:', notificationDate.toDate());
       return notificationId;
     } catch (error) {
       console.error('Error scheduling period reminder:', error);

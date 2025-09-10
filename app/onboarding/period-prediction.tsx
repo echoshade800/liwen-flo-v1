@@ -25,10 +25,14 @@ export default function PeriodPredictionScreen() {
     setShowReminderModal(false);
     
     try {
+      console.log('Enabling reminders for predicted date:', predictedDate);
+      
       // Schedule notification for the predicted date
       const notificationId = await notificationManager.schedulePeriodReminder(predictedDate);
       
       if (notificationId) {
+        console.log('Notification scheduled with ID:', notificationId);
+        
         // Save notification settings
         const notificationTime = dayjs(predictedDate).hour(9).minute(0).second(0);
         
@@ -52,6 +56,7 @@ export default function PeriodPredictionScreen() {
           ]
         );
       } else {
+        console.log('Failed to schedule notification - no notification ID returned');
         Alert.alert(
           'Permission Required',
           'Please enable notifications in your device settings to receive period reminders.',
