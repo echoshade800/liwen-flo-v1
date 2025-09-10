@@ -12,12 +12,22 @@ const GOALS = [
 ];
 
 export default function GoalSelectionScreen() {
-  const [selectedGoal, setSelectedGoal] = useState<string>('');
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const setProfile = useCycleStore(state => state.setProfile);
 
+  const handleGoalToggle = (goalId: string) => {
+    setSelectedGoals(prev => {
+      if (prev.includes(goalId)) {
+        return prev.filter(id => id !== goalId);
+      } else {
+        return [...prev, goalId];
+      }
+    });
+  };
   const handleContinue = () => {
-    if (selectedGoal) {
-      setProfile({ goal: selectedGoal });
+    if (selectedGoals.length > 0) {
+      // Save selected goals as an array or comma-separated string
+      setProfile({ goal: selectedGoals.join(',') });
       router.push('/onboarding/age-gate');
     }
   };
@@ -25,8 +35,8 @@ export default function GoalSelectionScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>What's your main goal?</Text>
-        <Text style={styles.subtitle}>Choose the most important one, you can change it later</Text>
+        <Text style={styles.title}>What are your goals?</Text>
+        <Text style={styles.subtitle}>Select all that apply, you can change them later</Text>
         
         <View style={styles.optionsContainer}>
           {GOALS.map((goal) => (
@@ -34,29 +44,34 @@ export default function GoalSelectionScreen() {
               key={goal.id}
               style={[
                 styles.option,
-                selectedGoal === goal.id && styles.selectedOption
+                selectedGoals.includes(goal.id) && styles.selectedOption
               ]}
-              onPress={() => setSelectedGoal(goal.id)}
+              onPress={() => handleGoalToggle(goal.id)}
               activeOpacity={0.7}
             >
               <Text style={styles.emoji}>{goal.emoji}</Text>
               <View style={styles.textContent}>
                 <Text style={[
                   styles.optionTitle,
-                  selectedGoal === goal.id && styles.selectedText
+                  selectedGoals.includes(goal.id) && styles.selectedText
                 ]}>
                   {goal.title}
                 </Text>
                 <Text style={styles.optionSubtitle}>{goal.subtitle}</Text>
               </View>
+              {selectedGoals.includes(goal.id) && (
+                <View style={styles.checkmark}>
+                  <Text style={styles.checkmarkText}>✓</Text>
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </View>
         
         <TouchableOpacity 
-          style={[styles.button, !selectedGoal && styles.buttonDisabled]} 
+          style={[styles.button, selectedGoals.length === 0 && styles.buttonDisabled]} 
           onPress={handleContinue}
-          disabled={!selectedGoal}
+          disabled={selectedGoals.length === 0}
         >
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
@@ -140,6 +155,20 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.white,
     textAlign: 'center',
+    fontWeight: '600',
+  },
+  checkmark: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing(1),
+  },
+  checkmarkText: {
+    color: colors.white,
+    fontSize: 16,
     fontWeight: '600',
   },
 });
