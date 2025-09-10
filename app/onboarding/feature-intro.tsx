@@ -48,12 +48,12 @@ export default function FeatureIntroCarousel() {
         scrollViewRef.current.scrollTo({ x: nextIndex * screenWidth, animated: true });
       }
     } else {
-      router.push('/onboarding/questions');
+      router.push('/onboarding/birth-year');
     }
   };
 
   const handleSkip = () => {
-    router.push('/onboarding/questions');
+    router.push('/onboarding/birth-year');
   };
 
   const onScroll = (event: any) => {

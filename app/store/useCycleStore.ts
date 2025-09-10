@@ -45,6 +45,7 @@ export type Preferences = {
 
 export type UserProfile = {
   age?: number;
+  birthYear?: number;
   goal?: string;
   hasCompletedOnboarding: boolean;
   questionnaireAnswers?: Record<string, any>;
