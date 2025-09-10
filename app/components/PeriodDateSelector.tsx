@@ -77,13 +77,18 @@ export default function PeriodDateSelector({
         for (let i = 0; i < 5; i++) {
           const periodDate = selectedDate.add(i, 'day');
           if (!periodDate.isAfter(dayjs(), 'day')) {
-            initialDates.push(periodDate.format('YYYY-MM-DD'));
+            const formattedDate = periodDate.format('YYYY-MM-DD');
+            initialDates.push(formattedDate);
+            console.log('Auto-selecting date:', formattedDate);
           }
         }
+        console.log('First selection - all dates:', initialDates);
         onDatesChange(initialDates);
       } else {
         // Add single date to existing selection
-        onDatesChange([...selectedDates, dateString].sort());
+        const newDates = [...selectedDates, dateString].sort();
+        console.log('Adding single date, new selectedDates:', newDates);
+        onDatesChange(newDates);
       }
     }
   };
@@ -102,12 +107,8 @@ export default function PeriodDateSelector({
             },
             text: {
               color: colors.white,
-              const formattedDate = periodDate.format('YYYY-MM-DD');
-              initialDates.push(formattedDate);
-              console.log('Auto-selecting date:', formattedDate);
             }
           }
-          console.log('First selection - all dates:', initialDates);
         };
       }
     });
@@ -125,9 +126,7 @@ export default function PeriodDateSelector({
           text: {
             color: colors.primary,
             fontWeight: '600',
-          const newDates = [...selectedDates, dateString].sort();
-          console.log('Adding single date, new selectedDates:', newDates);
-          onDatesChange(newDates);
+          }
         }
       };
     }
