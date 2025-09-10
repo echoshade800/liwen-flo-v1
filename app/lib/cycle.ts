@@ -326,7 +326,7 @@ export function getCalendarData(
           periodEnd,
           ovulationDate,
           fertileStart,
-          fertileEnd
+          fertileEnd,
           cycleNumber: cycleOffset
         });
       }
