@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     color: colors.black,
     fontWeight: '600',
     position: 'absolute',
-    top: -8,
+    top: -12,
     textAlign: 'center',
   },
   todayLabelSelected: {
