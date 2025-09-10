@@ -110,6 +110,14 @@ export default function PermissionsAndTermsScreen() {
     }
   };
 
+  const handlePrivacyPolicy = () => {
+    router.push('/onboarding/privacy-policy');
+  };
+
+  const handleTermsOfUse = () => {
+    // TODO: Add Terms of Use page
+    console.log('Terms of Use clicked');
+  };
   return (
     <SafeAreaView style={[styles.container, Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight }]}>
       <View style={styles.content}>
@@ -134,8 +142,8 @@ export default function PermissionsAndTermsScreen() {
 
         <Text style={styles.terms}>
           By continuing, you agree to our{' '}
-          <Text style={styles.link}>Privacy Policy</Text> and{' '}
-          <Text style={styles.link}>Terms of Use</Text>
+          <Text style={styles.link} onPress={handlePrivacyPolicy}>Privacy Policy</Text> and{' '}
+          <Text style={styles.link} onPress={handleTermsOfUse}>Terms of Use</Text>
         </Text>
         
         <TouchableOpacity 
