@@ -37,18 +37,6 @@ router.get('/data', async (req, res) => {
     const transformedDailyLogs = dailyLogs.map(log => ({
       date: log.log_date,
       // 安全地解析JSON字段，添加类型检查
-      feeling: log.feeling ? 
-        (typeof log.feeling === 'string' ? 
-          (() => {
-            try {
-              return JSON.parse(log.feeling);
-            } catch (e) {
-              console.error('Failed to parse feeling:', e);
-              return undefined;
-            }
-          })() : 
-          log.feeling
-        ) : undefined,
       flow: log.flow,
       sexActivity: log.sex_activity,
       libido: log.libido,
@@ -77,7 +65,42 @@ router.get('/data', async (req, res) => {
           log.symptoms
         ) : undefined,
       discharge: log.discharge,
-      digestion: log.digestion,
+      digestion: log.digestion ? 
+        (typeof log.digestion === 'string' ? 
+          (() => {
+            try {
+              return JSON.parse(log.digestion);
+            } catch (e) {
+              console.error('Failed to parse digestion:', e);
+              return undefined;
+            }
+          })() : 
+          log.digestion
+        ) : undefined,
+      others: log.others ? 
+        (typeof log.others === 'string' ? 
+          (() => {
+            try {
+              return JSON.parse(log.others);
+            } catch (e) {
+              console.error('Failed to parse others:', e);
+              return undefined;
+            }
+          })() : 
+          log.others
+        ) : undefined,
+      physicalActivity: log.physical_activity ? 
+        (typeof log.physical_activity === 'string' ? 
+          (() => {
+            try {
+              return JSON.parse(log.physical_activity);
+            } catch (e) {
+              console.error('Failed to parse physical_activity:', e);
+              return undefined;
+            }
+          })() : 
+          log.physical_activity
+        ) : undefined,
       pregnancyTest: log.pregnancy_test,
       steps: log.steps,
       distanceKm: log.distance_km,
@@ -190,14 +213,15 @@ router.post('/daily-logs', async (req, res) => {
     const dbData = {
       user_id: userId,
       log_date: logData.date,
-      feeling: logData.feeling ? JSON.stringify(logData.feeling) : null,
       flow: logData.flow === undefined ? null : logData.flow,
       sex_activity: logData.sexActivity === undefined ? null : logData.sexActivity,
       libido: logData.libido === undefined ? null : logData.libido,
       mood: logData.mood ? JSON.stringify(logData.mood) : null,
       symptoms: logData.symptoms ? JSON.stringify(logData.symptoms) : null,
       discharge: logData.discharge === undefined ? null : logData.discharge,
-      digestion: logData.digestion === undefined ? null : logData.digestion,
+      digestion: logData.digestion ? JSON.stringify(logData.digestion) : null,
+      others: logData.others ? JSON.stringify(logData.others) : null,
+      physical_activity: logData.physicalActivity ? JSON.stringify(logData.physicalActivity) : null,
       pregnancy_test: logData.pregnancyTest === undefined ? null : logData.pregnancyTest,
       steps: logData.steps === undefined ? null : logData.steps,
       distance_km: logData.distanceKm === undefined ? null : logData.distanceKm,

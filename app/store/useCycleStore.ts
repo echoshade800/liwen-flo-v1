@@ -17,14 +17,15 @@ export type CycleSummary = {
 
 export type DailyLog = {
   date: string;
-  feeling?: string[];
   flow?: 'light' | 'medium' | 'heavy' | 'clots';
   sexActivity?: 'none' | 'protected' | 'unprotected';
   libido?: 'low' | 'medium' | 'high';
   mood?: string[];
   symptoms?: string[];
   discharge?: 'dry' | 'watery' | 'eggwhite' | 'thick' | 'abnormal';
-  digestion?: 'normal' | 'bloat' | 'diarrhea' | 'constipation';
+  digestion?: string[];
+  others?: string[];
+  physicalActivity?: string[];
   pregnancyTest?: 'not_tested' | 'negative' | 'positive';
   steps?: number;
   distanceKm?: number;
@@ -187,13 +188,15 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
         }
         
         // 为所有可能为undefined的字段提供默认值（使用undefined而非null，因为TypeScript类型定义不允许null）
-      if (updatedLog.feeling === undefined) updatedLog.feeling = undefined;
       if (updatedLog.flow === undefined) updatedLog.flow = undefined;
       if (updatedLog.sexActivity === undefined) updatedLog.sexActivity = undefined;
       if (updatedLog.libido === undefined) updatedLog.libido = undefined;
       if (updatedLog.mood === undefined) updatedLog.mood = undefined;
       if (updatedLog.symptoms === undefined) updatedLog.symptoms = undefined;
       if (updatedLog.discharge === undefined) updatedLog.discharge = undefined;
+      if (updatedLog.digestion === undefined) updatedLog.digestion = undefined;
+      if (updatedLog.others === undefined) updatedLog.others = undefined;
+      if (updatedLog.physicalActivity === undefined) updatedLog.physicalActivity = undefined;
         
         if (existingIndex >= 0) {
           // 更新现有日志，合并数据以保留未修改的字段

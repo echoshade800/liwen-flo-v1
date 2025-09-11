@@ -60,41 +60,119 @@ export default function DayInfoCard({ selectedDate, cycleDay, dailyLog, onAddRec
       items.push(`🩸 ${flowText}`);
     }
     
-    // 今日感觉
-    if (dailyLog.feeling && dailyLog.feeling.length > 0) {
-      const feelingText = dailyLog.feeling.map(f => {
-        const feelingMap: Record<string, string> = {
-          'energetic': 'Energetic',
-          'tired': 'Tired',
-          'bloated': 'Bloated',
-          'happy': 'Happy',
-          'anxious': 'Anxious',
-          'calm': 'Calm'
-        };
-        return feelingMap[f] || f;
-      }).join('、');
-      items.push(`⚡ ${feelingText}`);
-    }
-    
     // 心情状态
     if (dailyLog.mood && dailyLog.mood.length > 0) {
       const moodText = dailyLog.mood.map(m => {
         const moodMap: Record<string, string> = {
+          'calm': 'Calm',
           'happy': 'Happy',
+          'energetic': 'Energetic',
+          'joyful': 'Joyful',
+          'mood_swings': 'Mood swings',
+          'angry': 'Angry',
           'sad': 'Sad',
-          'irritable': 'Irritable',
           'anxious': 'Anxious',
-          'confident': 'Confident',
-          'overwhelmed': 'Overwhelmed'
+          'depressed': 'Depressed',
+          'guilty': 'Guilty',
+          'obsessive_thoughts': 'Obsessive thoughts',
+          'listless': 'Listless',
+          'apathetic': 'Apathetic',
+          'confused': 'Confused',
+          'perfectionistic': 'Perfectionistic'
         };
         return moodMap[m] || m;
       }).join(', ');
       items.push(`💭 ${moodText}`);
     }
     
-    // 水分摄入
-    if (waterLitersVal !== null && waterLitersVal > 0) {
-      items.push(`💧 ${waterLitersVal.toFixed(1)}L`);
+    // 症状
+    if (dailyLog.symptoms && dailyLog.symptoms.length > 0) {
+      const symptomsText = dailyLog.symptoms.map(s => {
+        const symptomsMap: Record<string, string> = {
+          'all_good': 'All good',
+          'cramps': 'Cramps',
+          'breast_tenderness': 'Breast tenderness',
+          'headache': 'Headache',
+          'acne': 'Acne',
+          'back_pain': 'Back pain',
+          'fatigue': 'Fatigue',
+          'cravings': 'Cravings',
+          'insomnia': 'Insomnia',
+          'abdominal_pain': 'Abdominal pain',
+          'vaginal_itching': 'Vaginal itching',
+          'vaginal_dryness': 'Vaginal dryness'
+        };
+        return symptomsMap[s] || s;
+      }).join(', ');
+      items.push(`🤕 ${symptomsText}`);
+    }
+    
+    // 阴道分泌物
+    if (dailyLog.discharge) {
+      const dischargeMap: Record<string, string> = {
+        'no_discharge': 'No discharge',
+        'milky': 'Milky',
+        'watery': 'Watery',
+        'thick': 'Thick',
+        'egg_white': 'Egg white–like',
+        'spotting': 'Spotting',
+        'abnormal': 'Abnormal',
+        'white_clumpy': 'White clumpy',
+        'gray': 'Gray'
+      };
+      const dischargeText = dischargeMap[dailyLog.discharge as string] || dailyLog.discharge;
+      items.push(`💧 ${dischargeText}`);
+    }
+    
+    // 消化和排便
+    if ((dailyLog as any).digestion && (dailyLog as any).digestion.length > 0) {
+      const digestionText = (dailyLog as any).digestion.map((d: string) => {
+        const digestionMap: Record<string, string> = {
+          'nausea': 'Nausea',
+          'bloating': 'Bloating',
+          'constipation': 'Constipation',
+          'diarrhea': 'Diarrhea'
+        };
+        return digestionMap[d] || d;
+      }).join(', ');
+      items.push(`🚽 ${digestionText}`);
+    }
+    
+    // 其他活动
+    if ((dailyLog as any).others && (dailyLog as any).others.length > 0) {
+      const othersText = (dailyLog as any).others.map((o: string) => {
+        const othersMap: Record<string, string> = {
+          'travel': 'Travel',
+          'stress': 'Stress',
+          'meditation': 'Meditation',
+          'journal': 'Journal',
+          'kegel_training': 'Kegel training',
+          'breathwork': 'Breathwork',
+          'illness_injury': 'Illness or injury',
+          'alcohol': 'Alcohol'
+        };
+        return othersMap[o] || o;
+      }).join(', ');
+      items.push(`📝 ${othersText}`);
+    }
+    
+    // 体力活动
+    if ((dailyLog as any).physicalActivity && (dailyLog as any).physicalActivity.length > 0) {
+      const activityText = (dailyLog as any).physicalActivity.map((a: string) => {
+        const activityMap: Record<string, string> = {
+          'no_exercise': 'No exercise',
+          'yoga': 'Yoga',
+          'gym': 'Gym',
+          'aerobics_dance': 'Aerobics & dance',
+          'swimming': 'Swimming',
+          'team_sports': 'Team sports',
+          'running': 'Running',
+          'cycling': 'Cycling',
+          'walking': 'Walking'
+        };
+        return activityMap[a] || a;
+      }).join(', ');
+      items.push(`🏃‍♀️ ${activityText}`);
     }
     
     return items.length > 0 ? items.join(' · ') : 'No records yet';
