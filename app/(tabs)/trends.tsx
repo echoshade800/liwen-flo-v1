@@ -159,7 +159,7 @@ export default function TrendsScreen() {
                   backgroundGradientTo: colors.white,
                   decimalPlaces: 0,
                   color: (opacity = 1) => `rgba(255, 90, 122, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(31, 41, 55, ${opacity})`,
+                  labelColor: (opacity = 1) => '#1F2937',
                   style: {
                     borderRadius: radii.card,
                   },
