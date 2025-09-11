@@ -298,7 +298,6 @@ export default function CyclesHubScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      </ScrollView>
     </SafeAreaView>
   );
 }
