@@ -226,7 +226,7 @@ export default function DayInfoCard({ selectedDate, cycleDay, dailyLog, onAddRec
           {waterLitersVal !== null && waterLitersVal > 0 && (
             <View style={styles.statItem}>
               <Ionicons name="water" size={16} color={colors.fertileLight} />
-              <Text style={styles.statText}>{waterLitersVal.toFixed(1)}L water</Text>
+              <Text style={styles.statText}>{waterLitersVal.toFixed(2)}L water</Text>
             </View>
           )}
         </View>
