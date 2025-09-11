@@ -57,7 +57,24 @@ export default function CyclesHubScreen() {
       const sortedLogs = [...periodLogs].sort();
       const periodGroups = groupConsecutiveDates(sortedLogs);
       
-      if (periodGroups.length >= 2) {
+      if (periodGroups.length >= 3) {
+        // 计算最近三次经期的周期变化
+        const latest3Groups = periodGroups.slice(-3);
+        
+        // 计算最近两个周期长度
+        const cycle1Start = dayjs(latest3Groups[0][0]);
+        const cycle2Start = dayjs(latest3Groups[1][0]);
+        const cycle3Start = dayjs(latest3Groups[2][0]);
+        
+        const cycleLength1 = cycle2Start.diff(cycle1Start, 'day');
+        const cycleLength2 = cycle3Start.diff(cycle2Start, 'day');
+        
+        // 计算周期变化（最近两个周期的差值）
+        const cycleVariation = Math.abs(cycleLength2 - cycleLength1);
+        
+        // 简化状态判断：≤7天为绿色，>7天为红色
+        const cycleVariationStatus = cycleVariation <= 7 ? 'green' : 'red';
+        
         // 计算最近两个经期组的数据
         const latestPeriod = periodGroups[periodGroups.length - 1];
         const previousPeriod = periodGroups[periodGroups.length - 2];
@@ -74,10 +91,6 @@ export default function CyclesHubScreen() {
         // 判断经期长度状态 (3-7天为正常)
         const periodLengthStatus = periodLength >= 3 && periodLength <= 7 ? 'green' : 'red';
         
-        // 计算周期变化（与标准28天比较）
-        const cycleVariation = Math.abs(cycleLength - 28);
-        const cycleVariationStatus = cycleVariation <= 3 ? 'green' : cycleVariation <= 7 ? 'yellow' : 'red';
-        
         return {
           lastCycleLength: cycleLength,
           lastPeriodLength: periodLength,
@@ -85,7 +98,7 @@ export default function CyclesHubScreen() {
           cycleLengthStatus,
           periodLengthStatus,
         };
-      } else if (periodGroups.length === 1) {
+      } else if (periodGroups.length >= 1) {
         // 只有一个经期组，只能计算经期长度
         const periodLength = periodGroups[0].length;
         const periodLengthStatus = periodLength >= 3 && periodLength <= 7 ? 'green' : 'red';
@@ -93,7 +106,7 @@ export default function CyclesHubScreen() {
         return {
           lastCycleLength: 0,
           lastPeriodLength: periodLength,
-          cycleVariation: 'green' as const,
+          cycleVariation: null, // 数据不足，无法计算
           cycleLengthStatus: 'green' as const,
           periodLengthStatus,
         };
@@ -107,7 +120,7 @@ export default function CyclesHubScreen() {
       return {
         lastCycleLength: preferences.avgCycle || 28,
         lastPeriodLength: preferences.avgPeriod,
-        cycleVariation: 'green' as const,
+        cycleVariation: null, // 无法计算真实变化
         cycleLengthStatus: 'green' as const,
         periodLengthStatus,
       };
@@ -118,7 +131,7 @@ export default function CyclesHubScreen() {
       return {
         lastCycleLength: 0,
         lastPeriodLength: 0,
-        cycleVariation: 'green' as const,
+        cycleVariation: null,
         cycleLengthStatus: 'green' as const,
         periodLengthStatus: 'green' as const,
       };
@@ -129,7 +142,7 @@ export default function CyclesHubScreen() {
     return {
       lastCycleLength: lastCycle.cycleLength,
       lastPeriodLength: lastCycle.periodLength,
-      cycleVariation: lastCycle.status,
+      cycleVariation: null, // 历史数据无法计算真实变化
       cycleLengthStatus: lastCycle.status,
       periodLengthStatus: lastCycle.status,
     };
@@ -207,17 +220,21 @@ export default function CyclesHubScreen() {
             <View style={styles.statInfo}>
               <Text style={styles.statTitle}>Cycle Variation</Text>
               <Text style={styles.statValue}>
-                {stats.lastCycleLength ? `±${Math.abs(28 - stats.lastCycleLength)} days` : '--'}
+                {stats.cycleVariation !== null ? `${stats.cycleVariation <= 7 ? '≤7' : '>7'} days` : '--'}
               </Text>
             </View>
             <View style={styles.statusBadgeContainer}>
-              <StatusBadge 
-                status={stats.cycleVariation} 
-                text={
-                  stats.cycleVariation === 'green' ? 'Stable' :
-                  stats.cycleVariation === 'yellow' ? 'Slight variation' : 'Needs attention'
-                } 
-              />
+              {stats.cycleVariation !== null ? (
+                <StatusBadge 
+                  status={stats.cycleVariation} 
+                  text={stats.cycleVariation === 'green' ? 'Regular' : 'Irregular'}
+                />
+              ) : (
+                <StatusBadge 
+                  status="green" 
+                  text="Need more data"
+                />
+              )}
               <TouchableOpacity 
                 style={styles.infoIcon} 
                 onPress={() => router.push('/info/cycle-variation')}
