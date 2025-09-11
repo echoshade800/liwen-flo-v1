@@ -242,34 +242,6 @@ export default function CyclesHubScreen() {
                 <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
               </TouchableOpacity>
             </View>
-        </View>
-
-        <View style={styles.statCard}>
-          <View style={styles.statInfo}>
-            <Text style={styles.statTitle}>Cycle Variation</Text>
-            <Text style={styles.statValue}>
-              {stats.cycleVariation !== null ? `${stats.cycleVariation <= 7 ? '≤7' : '>7'} days` : '--'}
-            </Text>
-          </View>
-          <View style={styles.statusBadgeContainer}>
-            {stats.cycleVariation !== null ? (
-              <StatusBadge 
-                status={stats.cycleVariation} 
-                text={stats.cycleVariation === 'green' ? 'Regular' : 'Irregular'}
-              />
-            ) : (
-              <StatusBadge 
-                status="green" 
-                text="Need more data"
-              />
-            )}
-            <TouchableOpacity 
-              style={styles.infoIcon} 
-              onPress={() => router.push('/info/cycle-variation')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
-            </TouchableOpacity>
           </View>
         </View>
 
