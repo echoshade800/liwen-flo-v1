@@ -210,13 +210,22 @@ export default function CyclesHubScreen() {
                 {stats.lastCycleLength ? `±${Math.abs(28 - stats.lastCycleLength)} days` : '--'}
               </Text>
             </View>
-            <StatusBadge 
-              status={stats.cycleVariation} 
-              text={
-                stats.cycleVariation === 'green' ? 'Stable' :
-                stats.cycleVariation === 'yellow' ? 'Slight variation' : 'Needs attention'
-              } 
-            />
+            <View style={styles.statusBadgeContainer}>
+              <StatusBadge 
+                status={stats.cycleVariation} 
+                text={
+                  stats.cycleVariation === 'green' ? 'Stable' :
+                  stats.cycleVariation === 'yellow' ? 'Slight variation' : 'Needs attention'
+                } 
+              />
+              <TouchableOpacity 
+                style={styles.infoIcon} 
+                onPress={() => router.push('/info/cycle-variation')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
