@@ -5,14 +5,10 @@ import dayjs from 'dayjs';
 import { useCycleStore } from '../store/useCycleStore';
 import { getHistoricalCycles } from '../lib/cycle';
 import { colors, radii, spacing, typography } from '../theme/tokens';
-import PillChips from '../components/PillChips';
 
 const { width: screenWidth } = Dimensions.get('window');
-const TIME_FILTERS = ['Last 6M', 'This Year', 'All Time'];
 
 export default function TrendsScreen() {
-  const [selectedFilter, setSelectedFilter] = useState('Last 6M');
-  
   const periods = useCycleStore(state => state.periods);
   const periodLogs = useCycleStore(state => state.periodLogs);
   const generateHistoricalCycles = useCycleStore(state => state.generateHistoricalCycles);
@@ -25,46 +21,38 @@ export default function TrendsScreen() {
     return getHistoricalCycles(periods);
   }, [periodLogs, periods, generateHistoricalCycles]);
 
+  // 固定显示最近6个月的数据
+  const last6MonthsCycles = useMemo(() => {
+    const now = dayjs();
+    const sixMonthsAgo = now.subtract(6, 'month');
+    
+    return historicalCycles.filter(cycle => 
+      dayjs(cycle.startDate).isAfter(sixMonthsAgo)
+    );
+  }, [historicalCycles]);
+
   const getChartData = () => {
-    if (historicalCycles.length < 2) {
+    if (last6MonthsCycles.length < 2) {
       return {
         labels: ['No Data'],
         datasets: [{
           data: [28],
-          color: (opacity = 1) => colors.gray300,
+          color: () => '#D1D5DB',
         }]
       };
     }
 
-    // 根据选择的时间过滤器获取数据
-    let filteredCycles = historicalCycles;
-    const now = dayjs();
+    // 按时间顺序排列（最早的在左，最新的在右）
+    const sortedCycles = [...last6MonthsCycles].sort((a, b) => 
+      dayjs(a.startDate).valueOf() - dayjs(b.startDate).valueOf()
+    );
     
-    switch (selectedFilter) {
-      case 'Last 6M':
-        filteredCycles = historicalCycles.filter(cycle => 
-          dayjs(cycle.startDate).isAfter(now.subtract(6, 'month'))
-        );
-        break;
-      case 'This Year':
-        filteredCycles = historicalCycles.filter(cycle => 
-          dayjs(cycle.startDate).isAfter(now.startOf('year'))
-        );
-        break;
-      case 'All Time':
-        filteredCycles = historicalCycles;
-        break;
-    }
-    
-    // 最多显示12个数据点，按时间顺序排列
-    const recentCycles = filteredCycles.slice(0, 12).reverse();
-    
-    const labels = recentCycles.map((cycle, index) => {
+    const labels = sortedCycles.map((cycle, index) => {
       const date = dayjs(cycle.startDate);
       return date.format('MM/DD');
     });
     
-    const cycleLengths = recentCycles.map(cycle => cycle.cycleLength);
+    const cycleLengths = sortedCycles.map(cycle => cycle.cycleLength);
     const avgLength = cycleLengths.reduce((sum, length) => sum + length, 0) / cycleLengths.length;
     const minRange = avgLength - 2;
     const maxRange = avgLength + 2;
@@ -74,18 +62,18 @@ export default function TrendsScreen() {
       datasets: [
         {
           data: cycleLengths,
-          color: (opacity = 1) => colors.primary,
+          color: () => '#FF5A7A',
           strokeWidth: 3,
         },
         {
           data: new Array(cycleLengths.length).fill(maxRange),
-          color: (opacity = 0.3) => colors.primary,
+          color: () => 'rgba(255, 90, 122, 0.3)',
           strokeWidth: 0,
           withDots: false,
         },
         {
           data: new Array(cycleLengths.length).fill(minRange),
-          color: (opacity = 0.3) => colors.primary,
+          color: () => 'rgba(255, 90, 122, 0.3)',
           strokeWidth: 0,
           withDots: false,
         },
@@ -96,7 +84,7 @@ export default function TrendsScreen() {
   const chartData = getChartData();
   
   const getInsights = () => {
-    if (historicalCycles.length < 3) {
+    if (last6MonthsCycles.length < 3) {
       return {
         trend: 'Collecting data',
         message: 'Log more period data to see personalized trend analysis here',
@@ -104,7 +92,7 @@ export default function TrendsScreen() {
       };
     }
 
-    const recent3 = historicalCycles.slice(0, 3);
+    const recent3 = last6MonthsCycles.slice(0, 3);
     const avgLength = recent3.reduce((sum, cycle) => sum + cycle.cycleLength, 0) / 3;
     const variation = Math.max(...recent3.map(c => c.cycleLength)) - Math.min(...recent3.map(c => c.cycleLength));
 
@@ -138,16 +126,10 @@ export default function TrendsScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <PillChips
-          options={TIME_FILTERS}
-          selected={selectedFilter}
-          onSelect={setSelectedFilter}
-        />
-
         <View style={styles.chartSection}>
-          <Text style={styles.sectionTitle}>Cycle Length Trends</Text>
+          <Text style={styles.sectionTitle}>Cycle Length Trends (Last 6 Months)</Text>
           
-          {historicalCycles.length >= 2 ? (
+          {last6MonthsCycles.length >= 2 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <LineChart
                 data={chartData}
@@ -218,44 +200,44 @@ export default function TrendsScreen() {
           </View>
         </View>
 
-        {historicalCycles.length > 0 && (
+        {last6MonthsCycles.length > 0 && (
           <View style={styles.statsSection}>
             <Text style={styles.sectionTitle}>Statistics</Text>
             
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {historicalCycles.length > 0 ? 
-                    (historicalCycles.reduce((sum, c) => sum + c.cycleLength, 0) / historicalCycles.length).toFixed(1) : 
+                  {last6MonthsCycles.length > 0 ? 
+                    (last6MonthsCycles.reduce((sum, c) => sum + c.cycleLength, 0) / last6MonthsCycles.length).toFixed(1) : 
                     '--'
-                  }天
+                  } days
                 </Text>
                 <Text style={styles.statLabel}>Avg Cycle</Text>
               </View>
               
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {historicalCycles.length > 0 ? 
-                    (historicalCycles.reduce((sum, c) => sum + c.periodLength, 0) / historicalCycles.length).toFixed(1) : 
+                  {last6MonthsCycles.length > 0 ? 
+                    (last6MonthsCycles.reduce((sum, c) => sum + c.periodLength, 0) / last6MonthsCycles.length).toFixed(1) : 
                     '--'
-                  }天
+                  } days
                 </Text>
                 <Text style={styles.statLabel}>Avg Period</Text>
               </View>
               
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {historicalCycles.length > 0 ? 
-                    Math.max(...historicalCycles.map(c => c.cycleLength)) - 
-                    Math.min(...historicalCycles.map(c => c.cycleLength)) : 
+                  {last6MonthsCycles.length > 0 ? 
+                    Math.max(...last6MonthsCycles.map(c => c.cycleLength)) - 
+                    Math.min(...last6MonthsCycles.map(c => c.cycleLength)) : 
                     '--'
-                  }天
+                  } days
                 </Text>
                 <Text style={styles.statLabel}>Max Variation</Text>
               </View>
               
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{historicalCycles.length}</Text>
+                <Text style={styles.statValue}>{last6MonthsCycles.length}</Text>
                 <Text style={styles.statLabel}>Cycles Logged</Text>
               </View>
             </View>
