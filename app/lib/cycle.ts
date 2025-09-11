@@ -646,15 +646,17 @@ export function getHistoricalCycles(periods: PeriodEntry[]) {
 }
 
 function calculateSingleCycleStatus(cycleLength: number, periodLength: number): 'green' | 'yellow' | 'red' {
-  // 周期长度判断
-  if (cycleLength < 21 || cycleLength > 35) return 'red';
-  if (cycleLength < 25 || cycleLength > 32) return 'yellow';
-  
-  // 经期长度判断
-  if (periodLength < 2 || periodLength > 8) return 'red';
-  if (periodLength < 3 || periodLength > 7) return 'yellow';
-  
-  return 'green';
+  // 只基于经期长度判断状态
+  // 绿色 (正常): 2-7 天
+  // 黄色 (注意): 1 天 或 8 天  
+  // 红色 (异常): 0 天 或 >8 天
+  if (periodLength >= 2 && periodLength <= 7) {
+    return 'green';
+  } else if (periodLength === 1 || periodLength === 8) {
+    return 'yellow';
+  } else {
+    return 'red';
+  }
 }
 
 /**

@@ -587,23 +587,17 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
     
     // 判断状态的辅助函数
     var calculateStatus = function(cycleLen: number, periodLen: number) {
-      // 周期长度判断 (21-35天正常)
-      if (cycleLen < 21 || cycleLen > 35) {
+      // 只基于经期长度判断状态
+      // 绿色 (正常): 2-7 天
+      // 黄色 (注意): 1 天 或 8 天  
+      // 红色 (异常): 0 天 或 >8 天
+      if (periodLen >= 2 && periodLen <= 7) {
+        return 'green';
+      } else if (periodLen === 1 || periodLen === 8) {
+        return 'yellow';
+      } else {
         return 'red';
       }
-      if (cycleLen < 25 || cycleLen > 32) {
-        return 'yellow';
-      }
-      
-      // 经期长度判断 (3-7天正常)
-      if (periodLen < 3 || periodLen > 7) {
-        return 'red';
-      }
-      if (periodLen < 4 || periodLen > 6) {
-        return 'yellow';
-      }
-      
-      return 'green';
     };
     
     // 首先添加最新的经期作为当前经期（如果存在）

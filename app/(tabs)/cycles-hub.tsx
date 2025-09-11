@@ -223,7 +223,7 @@ export default function CyclesHubScreen() {
                 status={stats.periodLengthStatus} 
                 text={
                   stats.periodLengthStatus === 'green' ? 'Normal' : 
-                  stats.periodLengthStatus === 'yellow' ? 'Pay attention' : 'Needs attention'
+                  cycle.status === 'yellow' ? 'Pay attention' : 'Needs attention'
                 } 
               />
               <TouchableOpacity 
