@@ -38,26 +38,137 @@ export default function PeriodEditScreen() {
   }, [periodLogs]);
 
   const handleDayPress = (day: any) => {
-    console.log('handleDayPress day', day);
     const dateString = day.dateString;
-    // 忽略未来日期
+    console.log('=== Period Edit handleDayPress ===');
+    console.log('用户点击日期:', dateString);
+    console.log('当前已选日期:', selectedDates);
+    
+    // Prevent selecting future dates
     if (dayjs(dateString).isAfter(dayjs(), 'day')) {
+      console.log('忽略未来日期:', dateString);
       return;
     }
-    setSelectedDates(prev => {
-      console.log('handleDayPress prev', prev);
-      if (prev.includes(dateString)) {
-        // 取消选择
-        const next = prev.filter(date => date !== dateString);
-        console.log('handleDayPress next', next);
-        return next;
-      } else {
-        // 添加选择
-        const next = [...prev, dateString].sort();
-        console.log('handleDayPress next', next);
-        return next;
+
+    const selectedDate = dayjs(dateString);
+    
+    // Check if this date is already selected
+    if (selectedDates.includes(dateString)) {
+      // If clicking on an already selected date, remove it
+      const newDates = selectedDates.filter(date => date !== dateString);
+      console.log('取消选择日期，更新后:', newDates);
+      setSelectedDates(newDates);
+      return;
+    }
+
+    // Check if this should be a new period (10+ days before earliest existing date)
+    let shouldCreateNewPeriod = false;
+    if (selectedDates.length > 0) {
+      const earliestSelected = dayjs(Math.min(...selectedDates.map(d => dayjs(d).valueOf())));
+      const daysDifference = earliestSelected.diff(selectedDate, 'day');
+      shouldCreateNewPeriod = daysDifference >= 10;
+    }
+
+    if (shouldCreateNewPeriod) {
+      // Create new period: auto-select this date + next 4 days
+      const newPeriodDates = [];
+      for (let i = 0; i < 5; i++) {
+        const periodDate = selectedDate.add(i, 'day');
+        if (!periodDate.isAfter(dayjs(), 'day')) {
+          const formattedDate = periodDate.format('YYYY-MM-DD');
+          newPeriodDates.push(formattedDate);
+          console.log('New period auto-selecting date:', formattedDate);
+        }
       }
-    });
+      const combinedDates = [...selectedDates, ...newPeriodDates].sort();
+      console.log('新经期组合日期:', combinedDates);
+      setSelectedDates(combinedDates);
+    } else {
+      // First selection or extending existing period
+      if (selectedDates.length === 0) {
+        // First selection: auto-select this date + next 4 days
+        const initialDates = [];
+        for (let i = 0; i < 5; i++) {
+          const periodDate = selectedDate.add(i, 'day');
+          if (!periodDate.isAfter(dayjs(), 'day')) {
+            initialDates.push(periodDate.format('YYYY-MM-DD'));
+          }
+        }
+        console.log('首次选择自动填充日期:', initialDates);
+        setSelectedDates(initialDates);
+      } else {
+        // Add single date to existing selection
+        const newDates = [...selectedDates, dateString].sort();
+        console.log('添加单个日期，更新后:', newDates);
+        setSelectedDates(newDates);
+      }
+    }
+    
+    console.log('=== Period Edit 日期选择完成 ===');
+  };
+
+  const handleSave = async () => {
+    try {
+      console.log('=== Period Edit Save Debug ===');
+      console.log('原始 selectedDates:', selectedDates);
+      console.log('selectedDates 类型和内容:', selectedDates.map((d, i) => `${i}: "${d}" (${typeof d})`));
+      console.log('原始 periodLogs (从store):', periodLogs);
+      
+      // 保存前再次过滤掉未来日期，保证数据安全
+      const filtered = selectedDates.filter(d => !dayjs(d).isAfter(dayjs(), 'day'));
+      console.log('过滤后的 filtered dates:', filtered);
+      console.log('filtered dates 详细:', filtered.map((d, i) => `${i}: "${d}" (${typeof d})`));
+      
+      // 同步更新 LMP（最近一次经期开始），不生成额外日期
+      const lmp = findLastPeriodStart(filtered);
+      console.log('计算出的 LMP:', lmp);
+      
+      // 先更新 preferences（不触发同步）
+      const setPreferencesWithoutSync = useCycleStore.getState().setPreferences;
+      
+      // 批量更新：先更新 preferences，再更新 periodLogs（只触发一次同步）
+      useCycleStore.setState((state) => ({
+        preferences: { ...state.preferences, lastMenstrualPeriod: lmp || undefined },
+        periodLogs: filtered,
+        lastUpdated: Date.now(), // 强制触发重新渲染
+        error: null
+      }));
+      
+      // 手动触发一次同步，包含所有更新
+      console.log('调用 syncToServer，发送合并后的数据');
+      console.log('即将同步的 periodLogs:', filtered);
+      useCycleStore.getState().syncToServer();
+      
+      // 等待同步完成 - 检查 store 中的数据是否已更新
+      let attempts = 0;
+      const maxAttempts = 20; // 最多等待 10 秒
+      const checkInterval = 500; // 每 500ms 检查一次
+      
+      const waitForSync = () => {
+        attempts++;
+        const currentPeriodLogs = useCycleStore.getState().periodLogs;
+        console.log(`同步检查 ${attempts}/${maxAttempts}:`, currentPeriodLogs);
+        
+        // 检查数据是否已经同步（比较数组内容）
+        const isDataSynced = JSON.stringify(currentPeriodLogs.sort()) === JSON.stringify(filtered.sort());
+        
+        if (isDataSynced || attempts >= maxAttempts) {
+          console.log(isDataSynced ? '数据同步完成' : '同步超时，强制返回');
+          console.log('最终 periodLogs:', currentPeriodLogs);
+          router.back();
+        } else {
+          setTimeout(waitForSync, checkInterval);
+        }
+      };
+      
+      // 开始等待同步
+      setTimeout(waitForSync, checkInterval);
+    } catch (error) {
+      console.error('Failed to save period logs:', error);
+      // Could show an alert here if needed
+    }
+  };
+
+  const handleCancel = () => {
   };
 
   const handleSave = async () => {
