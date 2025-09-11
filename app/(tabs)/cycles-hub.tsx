@@ -242,6 +242,15 @@ export default function CyclesHubScreen() {
                 <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
               </TouchableOpacity>
             </View>
+              )}
+              <TouchableOpacity 
+                style={styles.infoIcon} 
+                onPress={() => router.push('/info/cycle-variation')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
