@@ -209,10 +209,19 @@ export default function CyclesHubScreen() {
               <Text style={styles.statTitle}>Last Period Length</Text>
               <Text style={styles.statValue}>{stats.lastPeriodLength || '--'} days</Text>
             </View>
-            <StatusBadge 
-              status={stats.periodLengthStatus} 
-              text={stats.periodLengthStatus === 'green' ? 'Normal' : 'Needs attention'} 
-            />
+            <View style={styles.statusBadgeContainer}>
+              <StatusBadge 
+                status={stats.periodLengthStatus} 
+                text={stats.periodLengthStatus === 'green' ? 'Normal' : 'Needs attention'} 
+              />
+              <TouchableOpacity 
+                style={styles.infoIcon} 
+                onPress={() => router.push('/info/period-length')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.statCard}>
