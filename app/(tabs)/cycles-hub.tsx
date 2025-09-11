@@ -172,8 +172,10 @@ export default function CyclesHubScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statTitle}>Last Cycle Length</Text>
-            <Text style={styles.statValue}>{stats.lastCycleLength || '--'} days</Text>
+            <View style={styles.statInfo}>
+              <Text style={styles.statTitle}>Last Cycle Length</Text>
+              <Text style={styles.statValue}>{stats.lastCycleLength || '--'} days</Text>
+            </View>
             <StatusBadge 
               status={stats.cycleLengthStatus} 
               text={stats.cycleLengthStatus === 'green' ? 'Normal' : 'Needs attention'} 
@@ -181,8 +183,10 @@ export default function CyclesHubScreen() {
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statTitle}>Last Period Length</Text>
-            <Text style={styles.statValue}>{stats.lastPeriodLength || '--'} days</Text>
+            <View style={styles.statInfo}>
+              <Text style={styles.statTitle}>Last Period Length</Text>
+              <Text style={styles.statValue}>{stats.lastPeriodLength || '--'} days</Text>
+            </View>
             <StatusBadge 
               status={stats.periodLengthStatus} 
               text={stats.periodLengthStatus === 'green' ? 'Normal' : 'Needs attention'} 
@@ -190,10 +194,12 @@ export default function CyclesHubScreen() {
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statTitle}>Cycle Variation</Text>
-            <Text style={styles.statValue}>
-              {stats.lastCycleLength ? `±${Math.abs(28 - stats.lastCycleLength)} days` : '--'}
-            </Text>
+            <View style={styles.statInfo}>
+              <Text style={styles.statTitle}>Cycle Variation</Text>
+              <Text style={styles.statValue}>
+                {stats.lastCycleLength ? `±${Math.abs(28 - stats.lastCycleLength)} days` : '--'}
+              </Text>
+            </View>
             <StatusBadge 
               status={stats.cycleVariation} 
               text={
@@ -282,16 +288,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statsContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     paddingHorizontal: spacing(3),
     marginBottom: spacing(2),
-    gap: spacing(2),
+    gap: spacing(1.5),
   },
   statCard: {
-    flex: 1,
+    width: '100%',
     backgroundColor: colors.white,
     borderRadius: radii.card,
-    padding: spacing(2),
+    padding: spacing(3),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
@@ -299,14 +307,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  statInfo: {
+    flex: 1,
+  },
   statTitle: {
     ...typography.small,
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: spacing(0.5),
   },
   statValue: {
-    ...typography.h3,
+    ...typography.h4,
     color: colors.text,
     marginBottom: spacing(1),
   },
