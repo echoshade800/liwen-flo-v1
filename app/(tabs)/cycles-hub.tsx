@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import dayjs from 'dayjs';
 import { useCycleStore } from '../store/useCycleStore';
 import { calculateCurrentCycle, getHistoricalCycles } from '../lib/cycle';
@@ -176,10 +177,19 @@ export default function CyclesHubScreen() {
               <Text style={styles.statTitle}>Last Cycle Length</Text>
               <Text style={styles.statValue}>{stats.lastCycleLength || '--'} days</Text>
             </View>
-            <StatusBadge 
-              status={stats.cycleLengthStatus} 
-              text={stats.cycleLengthStatus === 'green' ? 'Normal' : 'Needs attention'} 
-            />
+            <View style={styles.statusBadgeContainer}>
+              <StatusBadge 
+                status={stats.cycleLengthStatus} 
+                text={stats.cycleLengthStatus === 'green' ? 'Normal' : 'Needs attention'} 
+              />
+              <TouchableOpacity 
+                style={styles.infoIcon} 
+                onPress={() => router.push('/info/cycle-length')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.statCard}>
@@ -399,5 +409,13 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.red,
     marginLeft: spacing(1),
+  },
+  statusBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1),
+  },
+  infoIcon: {
+    padding: spacing(0.5),
   },
 });
