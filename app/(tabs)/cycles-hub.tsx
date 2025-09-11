@@ -57,8 +57,35 @@ export default function CyclesHubScreen() {
       const sortedLogs = [...periodLogs].sort();
       const periodGroups = groupConsecutiveDates(sortedLogs);
       
+      // Last Cycle Length: 需要至少2个经期组
+      let lastCycleLength = 0;
+      let cycleLengthStatus: 'green' | 'red' = 'green';
+      
+      if (periodGroups.length >= 2) {
+        const latestPeriod = periodGroups[periodGroups.length - 1];
+        const previousPeriod = periodGroups[periodGroups.length - 2];
+        
+        const latestStart = dayjs(latestPeriod[0]);
+        const previousStart = dayjs(previousPeriod[0]);
+        
+        lastCycleLength = latestStart.diff(previousStart, 'day');
+        cycleLengthStatus = lastCycleLength >= 21 && lastCycleLength <= 35 ? 'green' : 'red';
+      }
+      
+      // Last Period Length: 需要至少1个经期组
+      let lastPeriodLength = 0;
+      let periodLengthStatus: 'green' | 'red' = 'green';
+      
+      if (periodGroups.length >= 1) {
+        const latestPeriod = periodGroups[periodGroups.length - 1];
+        lastPeriodLength = latestPeriod.length;
+        periodLengthStatus = lastPeriodLength >= 3 && lastPeriodLength <= 7 ? 'green' : 'red';
+      }
+      
+      // Cycle Variation: 需要至少3个经期组才能计算
+      let cycleVariation: 'green' | 'red' | null = null;
+      
       if (periodGroups.length >= 3) {
-        // 计算最近三次经期的周期变化
         const latest3Groups = periodGroups.slice(-3);
         
         // 计算最近两个周期长度
@@ -70,47 +97,19 @@ export default function CyclesHubScreen() {
         const cycleLength2 = cycle3Start.diff(cycle2Start, 'day');
         
         // 计算周期变化（最近两个周期的差值）
-        const cycleVariation = Math.abs(cycleLength2 - cycleLength1);
+        const variationDays = Math.abs(cycleLength2 - cycleLength1);
         
         // 简化状态判断：≤7天为绿色，>7天为红色
-        const cycleVariationStatus = cycleVariation <= 7 ? 'green' : 'red';
-        
-        // 计算最近两个经期组的数据
-        const latestPeriod = periodGroups[periodGroups.length - 1];
-        const previousPeriod = periodGroups[periodGroups.length - 2];
-        
-        const latestStart = dayjs(latestPeriod[0]);
-        const previousStart = dayjs(previousPeriod[0]);
-        
-        const cycleLength = latestStart.diff(previousStart, 'day');
-        const periodLength = latestPeriod.length;
-        
-        // 判断周期长度状态 (21-35天为正常)
-        const cycleLengthStatus = cycleLength >= 21 && cycleLength <= 35 ? 'green' : 'red';
-        
-        // 判断经期长度状态 (3-7天为正常)
-        const periodLengthStatus = periodLength >= 3 && periodLength <= 7 ? 'green' : 'red';
-        
-        return {
-          lastCycleLength: cycleLength,
-          lastPeriodLength: periodLength,
-          cycleVariation: cycleVariationStatus,
-          cycleLengthStatus,
-          periodLengthStatus,
-        };
-      } else if (periodGroups.length >= 1) {
-        // 只有一个经期组，只能计算经期长度
-        const periodLength = periodGroups[0].length;
-        const periodLengthStatus = periodLength >= 3 && periodLength <= 7 ? 'green' : 'red';
-        
-        return {
-          lastCycleLength: 0,
-          lastPeriodLength: periodLength,
-          cycleVariation: null, // 数据不足，无法计算
-          cycleLengthStatus: 'green' as const,
-          periodLengthStatus,
-        };
+        cycleVariation = variationDays <= 7 ? 'green' : 'red';
       }
+      
+      return {
+        lastCycleLength,
+        lastPeriodLength,
+        cycleVariation,
+        cycleLengthStatus,
+        periodLengthStatus,
+      };
     }
     
     // 如果没有手动记录的经期数据，尝试使用 LMP 数据
