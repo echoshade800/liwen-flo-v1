@@ -24,7 +24,7 @@ export default function CyclesHubScreen() {
   const cycleInfo = calculateCurrentCycle(periods, preferences);
   
   // 优先使用用户记录的月经数据生成历史周期
-  const historicalCycles = useMemo(() => {
+  const allHistoricalCycles = useMemo(() => {
     console.log('=== Debug Cycle History ===');
     console.log('periodLogs:', periodLogs);
     
@@ -44,6 +44,33 @@ export default function CyclesHubScreen() {
     return getHistoricalCycles(periods);
   }, [periodLogs, periods, generateHistoricalCycles]);
 
+  // 根据选择的时间筛选器过滤历史周期数据
+  const filteredHistoricalCycles = useMemo(() => {
+    if (allHistoricalCycles.length === 0) return [];
+    
+    const now = dayjs();
+    
+    switch (selectedFilter) {
+      case 'Last 3M':
+        return allHistoricalCycles.filter(cycle => 
+          dayjs(cycle.startDate).isAfter(now.subtract(3, 'month'))
+        );
+      case 'Last 6M':
+        return allHistoricalCycles.filter(cycle => 
+          dayjs(cycle.startDate).isAfter(now.subtract(6, 'month'))
+        );
+      case 'Last Year':
+        return allHistoricalCycles.filter(cycle => 
+          dayjs(cycle.startDate).isAfter(now.subtract(1, 'year'))
+        );
+      case 'Earlier':
+        return allHistoricalCycles.filter(cycle => 
+          dayjs(cycle.startDate).isSameOrBefore(now.subtract(1, 'year'))
+        );
+      default:
+        return allHistoricalCycles;
+    }
+  }, [allHistoricalCycles, selectedFilter]);
   const handleResetData = () => {
     clearData();
   };
@@ -135,7 +162,7 @@ export default function CyclesHubScreen() {
     }
     
     // 如果没有足够的手动记录，回退到历史周期数据
-    if (historicalCycles.length === 0) {
+    if (allHistoricalCycles.length === 0) {
       return {
         lastCycleLength: 0,
         lastPeriodLength: 0,
@@ -145,7 +172,7 @@ export default function CyclesHubScreen() {
       };
     }
 
-    const lastCycle = historicalCycles[0];
+    const lastCycle = allHistoricalCycles[0];
     
     return {
       lastCycleLength: lastCycle.cycleLength,
@@ -275,13 +302,20 @@ export default function CyclesHubScreen() {
         <View style={styles.historySection}>
           <Text style={styles.sectionTitle}>Cycle History</Text>
           
-          {historicalCycles.length === 0 ? (
+          {filteredHistoricalCycles.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Not enough data yet</Text>
-              <Text style={styles.emptySubtext}>Log a few cycles to see your history here</Text>
+              <Text style={styles.emptyText}>
+                {allHistoricalCycles.length === 0 ? 'Not enough data yet' : 'No data for this period'}
+              </Text>
+              <Text style={styles.emptySubtext}>
+                {allHistoricalCycles.length === 0 
+                  ? 'Log a few cycles to see your history here'
+                  : 'Try selecting a different time range'
+                }
+              </Text>
             </View>
           ) : (
-            historicalCycles.map((cycle, index) => (
+            filteredHistoricalCycles.map((cycle, index) => (
               <View key={index} style={styles.cycleCard}>
                 <View style={styles.cycleHeader}>
                   <View>
@@ -297,7 +331,7 @@ export default function CyclesHubScreen() {
                     status={cycle.status}
                     text={
                       cycle.status === 'green' ? 'Normal' :
-                      cycle.status === 'yellow' ? 'Irregular' : 'Needs attention'
+                      cycle.status === 'yellow' ? 'Pay attention' : 'Needs attention'
                     }
                   />
                 </View>
