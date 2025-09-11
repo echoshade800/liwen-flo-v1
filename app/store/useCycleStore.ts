@@ -1,14 +1,8 @@
 import { create } from 'zustand';
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
 import { apiClient } from '../lib/api';
 import StorageUtils from '../lib/StorageUtils';
-import { PredictionHistory, calculatePredictionHistory, timezoneUtils } from '../lib/cycle';
-
-// Extend dayjs with timezone plugins
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { PredictionHistory, calculatePredictionHistory } from '../lib/cycle';
 
 export type PeriodEntry = {
   startDate: string;
@@ -136,26 +130,20 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
       length: Array.isArray(dates) ? dates.length : 'N/A'
     });
     
-    // Convert local dates to UTC for storage and ensure valid format
+    // 确保所有日期都是有效的 YYYY-MM-DD 格式
     const validatedDates = dates
       .filter(date => {
-        // Check if the date is valid in local timezone
-        const isValid = dayjs(date).local().isValid();
+        const isValid = dayjs(date).isValid();
         if (!isValid) {
-          console.warn('发现无效本地日期:', date);
+          console.warn('发现无效日期:', date);
         }
         return isValid;
       })
-      .map(date => {
-        // Convert local date to UTC for storage
-        const utcDate = timezoneUtils.localToUTC(date);
-        console.log(`转换日期: 本地 ${date} -> UTC ${utcDate}`);
-        return utcDate;
-      })
+      .map(date => dayjs(date).format('YYYY-MM-DD'))
       .filter((date, index, arr) => arr.indexOf(date) === index) // 去重
       .sort();
     
-    console.log('验证和转换为UTC后的日期:', validatedDates);
+    console.log('验证和格式化后的日期:', validatedDates);
     
     set(function(state) {
       return {
@@ -164,7 +152,7 @@ export const useCycleStore = create<CycleStore>((set, get) => ({
       };
     });
     
-    console.log('Store 更新完成，新的 periodLogs (UTC):', get().periodLogs);
+    console.log('Store 更新完成，新的 periodLogs:', get().periodLogs);
     
     // 立即同步到服务器
     setTimeout(() => {

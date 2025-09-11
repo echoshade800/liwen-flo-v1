@@ -3,13 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Statu
 import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
 import { colors, radii, spacing, typography } from '../theme/tokens';
-
-// Extend dayjs with timezone plugins
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 interface PeriodDateSelectorProps {
   selectedDates: string[];
@@ -24,48 +18,31 @@ export default function PeriodDateSelector({
   onSkip, 
   onNext 
 }: PeriodDateSelectorProps) {
-  // Use local timezone for display
-  const [currentMonth, setCurrentMonth] = useState(dayjs().local().format('YYYY-MM-DD'));
+  const [currentMonth, setCurrentMonth] = useState(dayjs().format('YYYY-MM-DD'));
   
   const hasSelectedDates = selectedDates.length > 0;
-  // Get today in user's local timezone
-  const today = dayjs().local().format('YYYY-MM-DD');
-
-  // Convert UTC dates to local dates for display
-  const convertUTCToLocal = (utcDateString: string): string => {
-    return dayjs.utc(utcDateString).local().format('YYYY-MM-DD');
-  };
-
-  // Convert local dates to UTC for storage
-  const convertLocalToUTC = (localDateString: string): string => {
-    return dayjs(localDateString).utc().format('YYYY-MM-DD');
-  };
-
-  // Convert selectedDates from UTC to local for display
-  const localSelectedDates = selectedDates.map(convertUTCToLocal);
+  const today = dayjs().format('YYYY-MM-DD');
 
   const handleDayPress = (day: any) => {
-    const localDateString = day.dateString;
+    const dateString = day.dateString;
     console.log('=== PeriodDateSelector handleDayPress ===');
-    console.log('用户点击本地日期:', localDateString);
-    console.log('当前已选UTC日期:', selectedDates);
-    console.log('当前已选本地日期:', localSelectedDates);
+    console.log('用户点击日期:', dateString);
+    console.log('当前已选日期:', selectedDates);
     
     
     // Prevent selecting future dates
-    if (dayjs(localDateString).isAfter(dayjs().local(), 'day')) {
-      console.log('忽略未来日期:', localDateString);
+    if (dayjs(dateString).isAfter(dayjs(), 'day')) {
+      console.log('忽略未来日期:', dateString);
       return;
     }
 
-    const selectedDate = dayjs(localDateString);
-    const utcDateString = convertLocalToUTC(localDateString);
+    const selectedDate = dayjs(dateString);
     
     // Check if this date is already selected
-    if (selectedDates.includes(utcDateString)) {
+    if (selectedDates.includes(dateString)) {
       // If clicking on an already selected date, remove it
-      const newDates = selectedDates.filter(date => date !== utcDateString);
-      console.log('取消选择日期，更新后UTC日期:', newDates);
+      const newDates = selectedDates.filter(date => date !== dateString);
+      console.log('取消选择日期，更新后:', newDates);
       onDatesChange(newDates);
       return;
     }
@@ -73,45 +50,42 @@ export default function PeriodDateSelector({
     // Check if this should be a new period (10+ days before earliest existing date)
     let shouldCreateNewPeriod = false;
     if (selectedDates.length > 0) {
-      const earliestSelected = dayjs.utc(Math.min(...selectedDates.map(d => dayjs.utc(d).valueOf())));
+      const earliestSelected = dayjs(Math.min(...selectedDates.map(d => dayjs(d).valueOf())));
       const daysDifference = earliestSelected.diff(selectedDate, 'day');
       shouldCreateNewPeriod = daysDifference >= 10;
     }
 
     if (shouldCreateNewPeriod) {
       // Create new period: auto-select this date + next 4 days
-      const newPeriodUTCDates = [];
+      const newPeriodDates = [];
       for (let i = 0; i < 5; i++) {
         const periodDate = selectedDate.add(i, 'day');
-        if (!periodDate.isAfter(dayjs().local(), 'day')) {
-          const localDate = periodDate.format('YYYY-MM-DD');
-          const utcDate = convertLocalToUTC(localDate);
-          newPeriodUTCDates.push(utcDate);
-          console.log('New period auto-selecting local date:', localDate, '-> UTC:', utcDate);
+        if (!periodDate.isAfter(dayjs(), 'day')) {
+          const formattedDate = periodDate.format('YYYY-MM-DD');
+          newPeriodDates.push(formattedDate);
+          console.log('New period auto-selecting date:', formattedDate);
         }
       }
-      const combinedDates = [...selectedDates, ...newPeriodUTCDates].sort();
-      console.log('新经期组合UTC日期:', combinedDates);
+      const combinedDates = [...selectedDates, ...newPeriodDates].sort();
+      console.log('新经期组合日期:', combinedDates);
       onDatesChange(combinedDates);
     } else {
       // First selection or extending existing period
       if (selectedDates.length === 0) {
         // First selection: auto-select this date + next 4 days
-        const initialUTCDates = [];
+        const initialDates = [];
         for (let i = 0; i < 5; i++) {
           const periodDate = selectedDate.add(i, 'day');
-          if (!periodDate.isAfter(dayjs().local(), 'day')) {
-            const localDate = periodDate.format('YYYY-MM-DD');
-            const utcDate = convertLocalToUTC(localDate);
-            initialUTCDates.push(utcDate);
+          if (!periodDate.isAfter(dayjs(), 'day')) {
+            initialDates.push(periodDate.format('YYYY-MM-DD'));
           }
         }
-        console.log('首次选择自动填充UTC日期:', initialUTCDates);
-        onDatesChange(initialUTCDates);
+        console.log('首次选择自动填充日期:', initialDates);
+        onDatesChange(initialDates);
       } else {
         // Add single date to existing selection
-        const newDates = [...selectedDates, utcDateString].sort();
-        console.log('添加单个UTC日期，更新后:', newDates);
+        const newDates = [...selectedDates, dateString].sort();
+        console.log('添加单个日期，更新后:', newDates);
         onDatesChange(newDates);
       }
     }
@@ -123,10 +97,9 @@ export default function PeriodDateSelector({
     const marked: Record<string, any> = {};
     
     // Mark selected period dates
-    selectedDates.forEach(utcDateString => {
-      const localDateString = convertUTCToLocal(utcDateString);
-      if (!dayjs(localDateString).isAfter(dayjs().local(), 'day')) {
-        marked[localDateString] = {
+    selectedDates.forEach(dateString => {
+      if (!dayjs(dateString).isAfter(dayjs(), 'day')) {
+        marked[dateString] = {
           customStyles: {
             container: {
               backgroundColor: colors.period,
@@ -141,8 +114,7 @@ export default function PeriodDateSelector({
     });
 
     // Mark today with border if not selected
-    const todayUTC = convertLocalToUTC(today);
-    if (!selectedDates.includes(todayUTC)) {
+    if (!selectedDates.includes(today)) {
       marked[today] = {
         customStyles: {
           container: {
