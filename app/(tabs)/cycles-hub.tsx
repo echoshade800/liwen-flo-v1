@@ -176,18 +176,10 @@ export default function CyclesHubScreen() {
               <Text style={styles.statTitle}>Last Cycle Length</Text>
               <Text style={styles.statValue}>{stats.lastCycleLength || '--'} days</Text>
             </View>
-            <View style={styles.statusBadgeContainer}>
-              <StatusBadge 
-                status={stats.cycleLengthStatus} 
-                text={stats.cycleLengthStatus === 'green' ? 'Normal' : 'Needs attention'} 
-              />
-              <TouchableOpacity 
-                style={styles.infoIcon}
-                onPress={() => router.push('/info/cycle-length')}
-              >
-                <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
-              </TouchableOpacity>
-            </View>
+            <StatusBadge 
+              status={stats.cycleLengthStatus} 
+              text={stats.cycleLengthStatus === 'green' ? 'Normal' : 'Needs attention'} 
+            />
           </View>
 
           <View style={styles.statCard}>
@@ -407,18 +399,5 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.red,
     marginLeft: spacing(1),
-  },
-  statusBadgeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing(1),
-  },
-  infoIcon: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 16,
-    backgroundColor: colors.primary + '10',
   },
 });

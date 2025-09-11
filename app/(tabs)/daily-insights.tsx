@@ -189,40 +189,6 @@ export default function DailyInsightsScreen() {
         </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>💧 Water</Text>
-        <View style={styles.waterContainer}>
-          <View style={styles.waterDisplay}>
-            <Text style={styles.waterAmount}>
-              {(localLog.intakeWaterLiters || 0).toFixed(1)}
-            </Text>
-            <Text style={styles.waterUnit}>/ 2.25L</Text>
-          </View>
-          <View style={styles.waterControls}>
-            <TouchableOpacity 
-              style={[
-                styles.waterButton, 
-                (localLog.intakeWaterLiters || 0) <= 0 && styles.waterButtonDisabled
-              ]}
-              onPress={handleWaterDecrease}
-              disabled={(localLog.intakeWaterLiters || 0) <= 0}
-            >
-              <Ionicons name="remove" size={20} color={colors.white} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                styles.waterButton,
-                (localLog.intakeWaterLiters || 0) >= 2.25 && styles.waterButtonDisabled
-              ]}
-              onPress={handleWaterIncrease}
-              disabled={(localLog.intakeWaterLiters || 0) >= 2.25}
-            >
-              <Ionicons name="add" size={20} color={colors.white} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🩸 Period Flow</Text>
@@ -415,46 +381,5 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '600',
     marginLeft: spacing(1),
-  },
-  waterContainer: {
-    alignItems: 'center',
-  },
-  waterDisplay: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: spacing(2),
-  },
-  waterAmount: {
-    fontSize: 48,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  waterUnit: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginLeft: spacing(1),
-  },
-  waterControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing(3),
-  },
-  waterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  waterButtonDisabled: {
-    backgroundColor: colors.gray300,
-    shadowOpacity: 0,
-    elevation: 0,
   },
 });
