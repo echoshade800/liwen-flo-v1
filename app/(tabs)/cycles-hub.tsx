@@ -74,12 +74,21 @@ export default function CyclesHubScreen() {
       
       // Last Period Length: 需要至少1个经期组
       let lastPeriodLength = 0;
-      let periodLengthStatus: 'green' | 'red' = 'green';
+      let periodLengthStatus: 'green' | 'yellow' | 'red' = 'green';
       
       if (periodGroups.length >= 1) {
         const latestPeriod = periodGroups[periodGroups.length - 1];
         lastPeriodLength = latestPeriod.length;
-        periodLengthStatus = lastPeriodLength >= 3 && lastPeriodLength <= 7 ? 'green' : 'red';
+        // 绿色 (正常): 2-7 天
+        // 黄色 (注意): 1 天 或 8 天  
+        // 红色 (异常): 0 天 或 >8 天
+        if (lastPeriodLength >= 2 && lastPeriodLength <= 7) {
+          periodLengthStatus = 'green';
+        } else if (lastPeriodLength === 1 || lastPeriodLength === 8) {
+          periodLengthStatus = 'yellow';
+        } else {
+          periodLengthStatus = 'red';
+        }
       }
       
       // Cycle Variation: 需要至少3个经期组才能计算
@@ -212,7 +221,10 @@ export default function CyclesHubScreen() {
             <View style={styles.statusBadgeContainer}>
               <StatusBadge 
                 status={stats.periodLengthStatus} 
-                text={stats.periodLengthStatus === 'green' ? 'Normal' : 'Needs attention'} 
+                text={
+                  stats.periodLengthStatus === 'green' ? 'Normal' : 
+                  stats.periodLengthStatus === 'yellow' ? 'Pay attention' : 'Needs attention'
+                } 
               />
               <TouchableOpacity 
                 style={styles.infoIcon} 
