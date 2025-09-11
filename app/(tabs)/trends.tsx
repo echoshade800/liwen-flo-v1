@@ -28,7 +28,7 @@ export default function TrendsScreen() {
   const getChartData = () => {
     if (historicalCycles.length < 2) {
       return {
-        labels: ['暂无数据'],
+        labels: ['No Data'],
         datasets: [{
           data: [28],
           color: (opacity = 1) => colors.gray300,
@@ -158,28 +158,41 @@ export default function TrendsScreen() {
                   backgroundGradientFrom: colors.white,
                   backgroundGradientTo: colors.white,
                   decimalPlaces: 0,
-                  color: (opacity = 1) => colors.primary,
-                  labelColor: (opacity = 1) => colors.textSecondary,
+                  color: (opacity = 1) => `rgba(255, 90, 122, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(31, 41, 55, ${opacity})`,
                   style: {
                     borderRadius: radii.card,
                   },
                   propsForDots: {
                     r: '6',
                     strokeWidth: '2',
-                    stroke: colors.primary,
+                    stroke: '#FF5A7A',
                   },
                   propsForLabels: {
                     fontSize: 12,
+                    fontWeight: '500',
                   },
-                  fillShadowGradient: colors.primary,
+                  propsForVerticalLabels: {
+                    fontSize: 12,
+                    fontWeight: '500',
+                  },
+                  propsForHorizontalLabels: {
+                    fontSize: 12,
+                    fontWeight: '500',
+                  },
+                  fillShadowGradient: '#FF5A7A',
                   fillShadowGradientOpacity: 0.1,
+                  useShadowColorFromDataset: false,
                 }}
                 style={styles.chart}
                 bezier
-                withInnerLines={true}
-                withOuterLines={true}
-                withVerticalLines={true}
-                withHorizontalLines={true}
+                withInnerLines={false}
+                withOuterLines={false}
+                withVerticalLines={false}
+                withHorizontalLines={false}
+                withVerticalLabels={true}
+                withHorizontalLabels={true}
+                fromZero={false}
               />
             </ScrollView>
           ) : (
