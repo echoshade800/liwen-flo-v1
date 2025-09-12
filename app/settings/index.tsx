@@ -6,9 +6,12 @@ import dayjs from 'dayjs';
 import { useCycleStore } from '../store/useCycleStore';
 import { notificationManager } from '../lib/notificationManager';
 import { colors, radii, spacing, typography } from '../theme/tokens';
+import CyclePreferencesModal from '../components/CyclePreferencesModal';
 
 export default function SettingsScreen() {
   const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
+  const [showCycleModal, setShowCycleModal] = useState(false);
+  const [showPeriodModal, setShowPeriodModal] = useState(false);
   
   const preferences = useCycleStore(state => state.preferences);
   const setPreferences = useCycleStore(state => state.setPreferences);
@@ -191,6 +194,44 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.iconContainer}>
+              <Ionicons name="calendar" size={24} color={colors.fertileLight} />
+            </View>
+            <View style={styles.textContainer}>
+              <Text style={styles.sectionTitle}>Cycle Preferences</Text>
+              <Text style={styles.sectionDesc}>
+                Customize your average cycle and period length for better predictions
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.preferencesList}>
+            <TouchableOpacity 
+              style={styles.preferenceItem} 
+              onPress={() => setShowCycleModal(true)}
+            >
+              <Text style={styles.preferenceLabel}>Average Cycle Length</Text>
+              <View style={styles.preferenceValue}>
+                <Text style={styles.preferenceValueText}>{preferences.avgCycle} days</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.preferenceItem} 
+              onPress={() => setShowPeriodModal(true)}
+            >
+              <Text style={styles.preferenceLabel}>Average Period Length</Text>
+              <View style={styles.preferenceValue}>
+                <Text style={styles.preferenceValueText}>{preferences.avgPeriod} days</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.iconContainer}>
               <Ionicons name="information-circle" size={24} color={colors.ovulation} />
             </View>
             <View style={styles.textContainer}>
@@ -218,6 +259,28 @@ export default function SettingsScreen() {
           </View>
         </View>
       </ScrollView>
+      
+      <CyclePreferencesModal
+        visible={showCycleModal}
+        type="cycle"
+        currentValue={preferences.avgCycle}
+        onSave={(value) => {
+          setPreferences({ avgCycle: value });
+          setShowCycleModal(false);
+        }}
+        onCancel={() => setShowCycleModal(false)}
+      />
+      
+      <CyclePreferencesModal
+        visible={showPeriodModal}
+        type="period"
+        currentValue={preferences.avgPeriod}
+        onSave={(value) => {
+          setPreferences({ avgPeriod: value });
+          setShowPeriodModal(false);
+        }}
+        onCancel={() => setShowPeriodModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -304,5 +367,31 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.red,
     lineHeight: 18,
+  },
+  preferencesList: {
+    marginTop: spacing(2),
+  },
+  preferenceItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing(2),
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray300,
+  },
+  preferenceLabel: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  preferenceValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  preferenceValueText: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '600',
+    marginRight: spacing(0.5),
   },
 });
