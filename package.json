@@ -1,5 +1,5 @@
 {
-  "name": "bolt-expo-starter",
+  "name": "PeriodTracker",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "private": true,
@@ -8,6 +8,8 @@
     "server": "cd server && node index.js",
     "dev:full": "npm run server & npm run dev",
     "build:web": "expo export --platform web",
+    "build:ios": "npx react-native bundle --platform ios --dev false --entry-file index.tsx --bundle-output ios/rnbundle/main.jsbundle --assets-dest ios",
+    "deploy:ios": "sh deploy_ios.sh",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -54,7 +56,8 @@
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
     "uuid": "^11.1.0",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "@aws-sdk/client-s3": "^3.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
